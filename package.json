@@ -1,0 +1,26 @@
+{
+  "name": "aura-ai",
+  "version": "1.0.0",
+  "description": "Aura AI — Production Full-Stack Conversational AI Application built with Node.js, Express, MongoDB, and Google Gemini API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "gemini",
+    "express",
+    "mongodb",
+    "mongoose"
+  ],
+  "author": "Aura AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.4.1"
+  }
+}

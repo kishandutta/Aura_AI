@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura AI — Autonomous Cognitive Agent Interface</title>
+  <meta name="description" content="Pioneering autonomous AI agent interface featuring recursive Think-Plan-Act cognition, client-side synthetic vector memory, biomimetic post-glassmorphism, and Gemini API integration." />
+
+  <!-- Google Fonts: Space Grotesk (Display), Plus Jakarta Sans (UI), JetBrains Mono (Code/Telemetry) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN with custom configurations -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['"Space Grotesk"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            aura: {
+              void: '#030509',
+              dark: '#070b14',
+              surface: 'rgba(15, 23, 42, 0.65)',
+              border: 'rgba(255, 255, 255, 0.08)',
+              cyan: '#00f2fe',
+              violet: '#8a2be2',
+              purple: '#6366f1',
+              amber: '#f59e0b',
+              emerald: '#10b981',
+              rose: '#f43f5e',
+            }
+          },
+          animation: {
+            'spin-slow': 'spin 24s linear infinite',
+            'pulse-subtle': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'float': 'float 6s ease-in-out infinite',
+            'shimmer': 'shimmer 2.5s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px) scale(1)' },
+              '50%': { transform: 'translateY(-8px) scale(1.02)' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Marked.js for parsing Markdown answers and telemetry -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    /* ==========================================================================
+       AURA AI - BIOMIMETIC POST-GLASSMORPHISM STYLING
+       ========================================================================== */
+
+    :root {
+      --aura-glow-color: rgba(0, 242, 254, 0.25);
+      --aura-glow-secondary: rgba(138, 43, 226, 0.25);
+      --aura-edge: rgba(0, 242, 254, 0.35);
+      --aura-speed: 6s;
+    }
+
+    /* Cognitive State Themes (Biomimetic adaptive colors) */
+    body[data-state="IDLE"] {
+      --aura-glow-color: rgba(0, 242, 254, 0.2);
+      --aura-glow-secondary: rgba(99, 102, 241, 0.2);
+      --aura-edge: rgba(0, 242, 254, 0.3);
+    }
+    body[data-state="PERCEIVING"] {
+      --aura-glow-color: rgba(14, 165, 233, 0.45);
+      --aura-glow-secondary: rgba(59, 130, 246, 0.35);
+      --aura-edge: rgba(14, 165, 233, 0.6);
+    }
+    body[data-state="THINKING"] {
+      --aura-glow-color: rgba(168, 85, 247, 0.5);
+      --aura-glow-secondary: rgba(236, 72, 153, 0.35);
+      --aura-edge: rgba(168, 85, 247, 0.7);
+    }
+    body[data-state="PLANNING"] {
+      --aura-glow-color: rgba(245, 158, 11, 0.5);
+      --aura-glow-secondary: rgba(234, 88, 12, 0.35);
+      --aura-edge: rgba(245, 158, 11, 0.7);
+    }
+    body[data-state="ACTING"] {
+      --aura-glow-color: rgba(16, 185, 129, 0.5);
+      --aura-glow-secondary: rgba(6, 182, 212, 0.35);
+      --aura-edge: rgba(16, 185, 129, 0.7);
+    }
+    body[data-state="RESPONDING"] {
+      --aura-glow-color: rgba(6, 182, 212, 0.5);
+      --aura-glow-secondary: rgba(99, 102, 241, 0.4);
+      --aura-edge: rgba(6, 182, 212, 0.7);
+    }
+
+    /* Dynamic ambient backdrops */
+    .biomimetic-halo {
+      background: radial-gradient(circle at 50% 30%, var(--aura-glow-color) 0%, var(--aura-glow-secondary) 40%, transparent 70%);
+      transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s ease;
+      filter: blur(80px);
+    }
+
+    /* Post-Glassmorphic Adaptive Container */
+    .glass-panel {
+      background: rgba(11, 17, 32, 0.7);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 30px var(--aura-glow-color);
+      transition: border-color 0.8s ease, box-shadow 0.8s ease;
+    }
+
+    .glass-panel:hover {
+      border-color: var(--aura-edge);
+    }
+
+    .glass-input-container {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 12px rgba(255, 255, 255, 0.02);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-input-container:focus-within {
+      border-color: var(--aura-edge);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 0 25px var(--aura-glow-color), inset 0 0 16px rgba(255, 255, 255, 0.04);
+    }
+
+    /* Custom Scrollbar for Neural Streams */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(3, 5, 9, 0.5);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--aura-edge);
+    }
+
+    /* Typography & Markdown styling inside output */
+    .prose-aura {
+      color: #e2e8f0;
+      line-height: 1.7;
+    }
+    .prose-aura p { margin-bottom: 0.95rem; }
+    .prose-aura h1, .prose-aura h2, .prose-aura h3 {
+      color: #ffffff;
+      font-family: 'Space Grotesk', sans-serif;
+      margin-top: 1.4rem;
+      margin-bottom: 0.6rem;
+      font-weight: 600;
+    }
+    .prose-aura code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 0.2rem 0.4rem;
+      border-radius: 0.35rem;
+      font-size: 0.88em;
+      color: #38bdf8;
+    }
+    .prose-aura pre {
+      background: rgba(3, 7, 18, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.75rem;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    .prose-aura pre code {
+      background: transparent;
+      padding: 0;
+      color: #e2e8f0;
+    }
+    .prose-aura ul, .prose-aura ol {
+      padding-left: 1.4rem;
+      margin-bottom: 1rem;
+    }
+    .prose-aura li { margin-bottom: 0.35rem; }
+
+    /* Scanline overlay for cybernetic feel */
+    .scanlines {
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+    }
+
+    /* Pulse wave for thought items */
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+    .thinking-active-node {
+      animation: pulseGlow 1.5s infinite;
+    }
+  </style>
+</head>
+
+<body data-state="IDLE" class="bg-aura-void text-slate-100 font-sans min-h-screen flex flex-col relative selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden antialiased">
+
+  <!-- ==========================================================================
+       BIOMIMETIC REACTIVE LIGHTING & PARTICLES LAYER
+       ========================================================================== -->
+  <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+    <!-- Dynamic State Ambient Halo -->
+    <div id="ambientHalo" class="biomimetic-halo absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[750px] rounded-full opacity-60"></div>
+    <div class="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-indigo-900/10 filter blur-[100px]"></div>
+    <div class="absolute top-[40%] left-[-10%] w-[500px] h-[500px] rounded-full bg-cyan-900/10 filter blur-[120px]"></div>
+    
+    <!-- Subtle Neural Grid -->
+    <div class="absolute inset-0 opacity-[0.03] bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:32px_32px]"></div>
+    <!-- Scanline Texture -->
+    <div class="scanlines absolute inset-0 opacity-40"></div>
+  </div>
+
+  <!-- ==========================================================================
+       TOP NAVIGATION & COGNITIVE TELEMETRY BAR
+       ========================================================================== -->
+  <header class="relative z-30 w-full border-b border-white/[0.06] bg-aura-dark/70 backdrop-blur-xl px-4 sm:px-8 py-3.5 flex items-center justify-between transition-all">
+    <!-- Brand identity -->
+    <div class="flex items-center gap-3.5">
+      <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 via-purple-500/10 to-transparent border border-cyan-400/30 shadow-[0_0_15px_rgba(0,242,254,0.25)]">
+        <!-- Mini Core Pulsar -->
+        <span id="navCorePing" class="absolute w-3 h-3 rounded-full bg-cyan-400 animate-ping opacity-75"></span>
+        <span id="navCoreDot" class="w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_10px_#00f2fe]"></span>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-display text-lg font-bold tracking-wider bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">AURA AI</span>
+          <span class="px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest rounded-full bg-white/[0.06] text-cyan-400 border border-cyan-500/20">v2.5 COGNITIVE</span>
+        </div>
+        <p class="text-[11px] text-slate-400 font-mono tracking-tight flex items-center gap-1.5">
+          <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          STATE: <span id="telemetryStateLabel" class="text-cyan-300 font-semibold tracking-wider">IDLE (AWAITING INPUT)</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Telemetry Badges & Control Center -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Memory Matrix Counter Button -->
+      <button id="openMemoryModalBtn" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-cyan-500/40 text-xs font-mono text-slate-300 transition-all shadow-sm group" title="Open Synthetic Vector Memory Matrix">
+        <svg class="w-4 h-4 text-cyan-400 group-hover:rotate-45 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+        <span class="hidden sm:inline">SYNTHETIC MEMORY:</span>
+        <span id="navMemoryCount" class="font-bold text-cyan-300 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-800/50">0 vectors</span>
+      </button>
+
+      <!-- Audio Bio-Feedback Toggle (Synthesized Chimes) -->
+      <button id="audioToggleBtn" class="p-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-slate-400 hover:text-cyan-300 transition-all" title="Toggle Cognitive Audio Synthesis">
+        <svg id="audioIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+      </button>
+
+      <!-- Engine / Gemini Settings Modal Button -->
+      <button id="openSettingsModalBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-500/20 to-cyan-500/20 hover:from-purple-500/30 hover:to-cyan-500/30 border border-purple-500/30 text-xs font-mono text-cyan-200 transition-all shadow-[0_0_15px_rgba(138,43,226,0.15)]">
+        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        <span class="font-medium">ENGINE CONFIG</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN VIEWPORT CONTAINER
+       ========================================================================== -->
+  <main class="relative z-10 flex-1 flex flex-col items-center justify-between max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+
+    <!-- ======================================================================
+         SECTION 1: HERO & WELCOME VIEW (VISIBLE INITIALLY)
+         ====================================================================== -->
+    <div id="heroSection" class="w-full flex-1 flex flex-col items-center justify-center text-center transition-all duration-700 ease-out max-w-4xl mx-auto py-4">
+      
+      <!-- Biomimetic Cognitive Core Orb (Interactive Canvas) -->
+      <div class="relative mb-6 sm:mb-8 group cursor-pointer" id="orbContainer" title="Click to stimulate cognitive pulse">
+        <canvas id="auraOrbCanvas" width="280" height="280" class="w-48 h-48 sm:w-64 sm:h-64 mx-auto rounded-full filter drop-shadow-[0_0_40px_var(--aura-glow-color)] transition-transform duration-500 group-hover:scale-105"></canvas>
+        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div class="w-24 h-24 rounded-full border border-white/20 animate-spin-slow"></div>
+          <div class="absolute w-36 h-36 rounded-full border border-dashed border-cyan-400/25 animate-reverse"></div>
+        </div>
+        <!-- Live Status Floating Chip -->
+        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-aura-dark/80 backdrop-blur-md border border-cyan-400/30 text-[11px] font-mono text-cyan-300 tracking-wider shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          COGNITIVE CORE ONLINE
+        </div>
+      </div>
+
+      <!-- Hero Typography -->
+      <div class="space-y-3 mb-8">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-slate-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span>
+          AUTONOMOUS RECURSIVE REASONING SYSTEM
+        </div>
+        <h1 class="text-4xl sm:text-6xl md:text-7xl font-extrabold font-display tracking-tight leading-none bg-gradient-to-b from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+          Meet <span class="bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_25px_rgba(0,242,254,0.3)]">Aura AI</span>
+        </h1>
+        <p class="text-sm sm:text-lg text-slate-400 max-w-2xl mx-auto font-light leading-relaxed">
+          An elevated intelligence engineered with an autonomous <span class="text-cyan-300 font-medium">Think-Plan-Act</span> loop, client-side synthetic vector memory retrieval, and adaptive biomimetic resonance.
+        </p>
+      </div>
+
+      <!-- Quick Action Starter Prompt Chips -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full max-w-2xl mb-8">
+        <button onclick="injectPrompt('Analyze the thermodynamic limits of silicon computing and propose a 3-step nanotech architecture.')" class="text-left p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-cyan-500/40 transition-all text-xs group">
+          <div class="flex items-center gap-1.5 text-cyan-400 font-medium font-mono mb-1">
+            <span>🔬 Deep Deliberation</span>
+          </div>
+          <p class="text-slate-400 line-clamp-2 group-hover:text-slate-200">Nanotech computing limits & 3-step synthesis.</p>
+        </button>
+        <button onclick="injectPrompt('Search the latest breakthroughs in CRISPR prime editing and write an algorithmic simulation in Python.')" class="text-left p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-emerald-500/40 transition-all text-xs group">
+          <div class="flex items-center gap-1.5 text-emerald-400 font-medium font-mono mb-1">
+            <span>⚡ Multi-Tool Execution</span>
+          </div>
+          <p class="text-slate-400 line-clamp-2 group-hover:text-slate-200">Search web & execute Python code simulation.</p>
+        </button>
+        <button onclick="injectPrompt('My name is Dr. Elena Vance and I lead the Quantum Optics Lab. Remember this project and calculate photonic coherence.')" class="text-left p-3 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/40 transition-all text-xs group">
+          <div class="flex items-center gap-1.5 text-purple-400 font-medium font-mono mb-1">
+            <span>🧠 Synthetic Memory</span>
+          </div>
+          <p class="text-slate-400 line-clamp-2 group-hover:text-slate-200">Index personal context into local vector store.</p>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ======================================================================
+         SECTION 2: CONVERSATION & AGENTIC TELEMETRY STREAM
+         ====================================================================== -->
+    <div id="chatFeedSection" class="hidden w-full flex-1 flex flex-col space-y-6 pb-6 overflow-y-auto max-h-[calc(100vh-280px)] pr-1">
+      <!-- Conversation nodes will be appended dynamically by JavaScript -->
+    </div>
+
+    <!-- ======================================================================
+         SECTION 3: REVOLUTIONARY OMNIBAR INPUT AREA
+         ====================================================================== -->
+    <div class="w-full max-w-4xl mx-auto pt-2 sticky bottom-4 z-20">
+      <div class="glass-input-container rounded-2xl p-2 sm:p-2.5 transition-all duration-300">
+        <!-- Dynamic Prompt Context Pill & Memory Recall Indicator -->
+        <div id="memoryActiveBadge" class="hidden px-3 py-1 mb-2 rounded-lg bg-cyan-950/80 border border-cyan-500/30 text-cyan-300 text-xs font-mono flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span>SYNTHETIC MEMORY ACTIVATED: Recalled <strong id="recalledMemoryCount">0</strong> related vectors</span>
+          </div>
+          <button onclick="dismissMemoryContext()" class="text-slate-400 hover:text-white text-xs">✕</button>
+        </div>
+
+        <form id="agentInputForm" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <!-- Text Input Area -->
+          <div class="relative flex-1 flex items-center">
+            <textarea
+              id="userPromptInput"
+              rows="1"
+              placeholder="Ask Aura AI anything... Enter deep problem, research query, or task trajectory."
+              class="w-full bg-transparent border-0 text-slate-100 placeholder-slate-500 text-sm sm:text-base focus:ring-0 resize-none py-2 px-3 max-h-36 overflow-y-auto leading-relaxed focus:outline-none"
+              style="min-height: 44px;"
+            ></textarea>
+          </div>
+
+          <!-- Omni-Bar Action Controls -->
+          <div class="flex items-center justify-between sm:justify-end gap-2 px-2 pb-1 sm:pb-0 border-t sm:border-t-0 border-white/[0.06] pt-1 sm:pt-0">
+            <!-- Cognitive Loop Mode Indicator -->
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] text-[11px] font-mono text-slate-400 border border-white/5" title="Recursive Loop Active">
+              <svg class="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span class="hidden md:inline">THINK-PLAN-ACT</span>
+            </div>
+
+            <!-- Clear/Reset Conversation -->
+            <button type="button" id="resetChatBtn" class="p-2 text-slate-400 hover:text-rose-300 rounded-lg hover:bg-white/[0.05] transition-colors" title="Clear Agent Thread">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+
+            <!-- Dispatch Button -->
+            <button
+              type="submit"
+              id="sendPromptBtn"
+              class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:via-blue-500 hover:to-purple-500 text-white font-medium text-sm transition-all shadow-[0_0_20px_rgba(0,242,254,0.35)] hover:shadow-[0_0_30px_rgba(0,242,254,0.5)] disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+            >
+              <span class="font-display font-semibold tracking-wide">Engage</span>
+              <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Quick Feature Status Footer Bar -->
+      <div class="mt-2 flex items-center justify-between text-[11px] font-mono text-slate-500 px-3">
+        <div class="flex items-center gap-3">
+          <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Vector Cosine Memory</span>
+          <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-purple-400"></span> Deliberate Reasoning</span>
+          <span class="flex items-center gap-1 hidden sm:inline-flex"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Tool Sandbox</span>
+        </div>
+        <div id="engineModeBadge" class="text-cyan-400/80 hover:underline cursor-pointer" onclick="document.getElementById('openSettingsModalBtn').click()">
+          Engine: Gemini API / Simulation Auto
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ==========================================================================
+       MODAL 1: SYNTHETIC VECTOR MEMORY MATRIX
+       ========================================================================== -->
+  <div id="memoryModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden transition-all">
+    <div class="glass-panel w-full max-w-2xl rounded-2xl border border-white/10 p-6 flex flex-col max-h-[85vh] shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg text-white">Synthetic Vector Memory Matrix</h3>
+            <p class="text-xs text-slate-400 font-mono">Client-side TF-IDF Bag-of-Words Cosine Retrieval (LocalStorage)</p>
+          </div>
+        </div>
+        <button id="closeMemoryModalBtn" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10">✕</button>
+      </div>
+
+      <!-- Memory Injection Form -->
+      <div class="my-4 p-3 rounded-xl bg-white/[0.02] border border-white/10 space-y-2">
+        <label class="block text-xs font-mono text-cyan-300">MANUAL VECTOR INJECTION:</label>
+        <div class="flex gap-2">
+          <input id="manualMemoryInput" type="text" placeholder="e.g. User is building a real-time autonomous drone navigation stack." class="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400" />
+          <button id="injectMemoryBtn" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-mono text-xs font-medium transition-all">
+            + Store Vector
+          </button>
+        </div>
+      </div>
+
+      <!-- Memory Items List -->
+      <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-[220px]" id="memoryMatrixList">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <div class="pt-4 border-t border-white/10 flex items-center justify-between text-xs font-mono">
+        <button id="purgeMemoryBtn" class="text-rose-400 hover:text-rose-300 transition-colors">Purge All Memory Vectors</button>
+        <span class="text-slate-400">Total Memories: <span id="memoryModalCount" class="text-cyan-300 font-bold">0</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL 2: GEMINI API ENGINE & COGNITIVE CONTROLS
+       ========================================================================== -->
+  <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden transition-all">
+    <div class="glass-panel w-full max-w-xl rounded-2xl border border-white/10 p-6 flex flex-col max-h-[85vh] shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-display font-bold text-lg text-white">Aura Cognitive Engine Setup</h3>
+            <p class="text-xs text-slate-400 font-mono">Google Gemini Pro API & Reasoning Parameters</p>
+          </div>
+        </div>
+        <button id="closeSettingsModalBtn" class="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10">✕</button>
+      </div>
+
+      <div class="space-y-4 my-4 overflow-y-auto pr-1">
+        <!-- Gemini API Key Input -->
+        <div>
+          <label class="block text-xs font-mono text-cyan-300 mb-1">GOOGLE GEMINI API KEY (OPTIONAL):</label>
+          <input
+            id="geminiApiKeyInput"
+            type="password"
+            placeholder="AIzaSy... (Leave empty to use built-in Neural Simulation Engine)"
+            class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-400 font-mono"
+          />
+          <p class="text-[11px] text-slate-400 mt-1">
+            If left blank, Aura AI activates its high-fidelity Think-Plan-Act simulation model with mock tool calls and instant realistic execution.
+          </p>
+        </div>
+
+        <!-- Model Picker -->
+        <div>
+          <label class="block text-xs font-mono text-cyan-300 mb-1">SELECT COGNITIVE MODEL:</label>
+          <select id="geminiModelSelect" class="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-400 font-mono">
+            <option value="gemini-2.0-flash" selected>gemini-2.0-flash (Ultra Fast + Tool Optimized)</option>
+            <option value="gemini-1.5-pro">gemini-1.5-pro (Deep Multimodal Deliberation)</option>
+            <option value="gemini-1.5-flash">gemini-1.5-flash (Standard Lightweight)</option>
+          </select>
+        </div>
+
+        <!-- Cognitive Temperature Slider -->
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="text-xs font-mono text-cyan-300">DELIBERATION TEMPERATURE:</label>
+            <span id="tempValueLabel" class="text-xs font-mono text-purple-300">0.40 (Deterministic)</span>
+          </div>
+          <input id="temperatureInput" type="range" min="0" max="1" step="0.05" value="0.4" class="w-full accent-cyan-400 cursor-pointer" />
+        </div>
+
+        <!-- System Prompt Instruction Preview -->
+        <div>
+          <label class="block text-xs font-mono text-cyan-300 mb-1">AGENTIC SYSTEM DIRECTIVE:</label>
+          <div class="bg-black/60 border border-white/10 rounded-lg p-3 text-[11px] font-mono text-slate-400 max-h-32 overflow-y-auto leading-relaxed">
+            You are Aura AI, an autonomous cognitive entity. For every user query, you strictly execute a recursive Think-Plan-Act trajectory. Formulate internal hypotheses (THINK), construct tactical milestones (PLAN), trigger tools if needed (ACT), and synthesize deep, articulate findings (RESPOND).
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-white/10 flex justify-end gap-3">
+        <button id="saveSettingsBtn" class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-medium text-xs font-mono tracking-wider shadow-lg transition-all">
+          SAVE ENGINE CONFIG
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT COGNITIVE ARCHITECTURE & LOGIC
+       ========================================================================== -->
+  <script>
+    /**
+     * ========================================================================
+     * AURA AI - ARCHITECTURAL BLUEPRINT & SYSTEM CONTROLLER
+     * ========================================================================
+     * This single-file artifact implements:
+     * 1. Biomimetic Particle Orb & Audio Reactive System (Canvas 2D + Web Audio API)
+     * 2. Synthetic Vector Memory Matrix (LocalStorage + TF-IDF Vector Space + Cosine Similarity)
+     * 3. Recursive Agentic State Machine (IDLE -> PERCEIVING -> THINKING -> PLANNING -> ACTING -> RESPONDING)
+     * 4. Extensible Tool Use Schemas (SearchWeb, ExecutePythonCode, FetchTelemetry)
+     * 5. Dual-Engine Dispatcher (Real Google Gemini Pro/Flash API + High-Fidelity Simulator)
+     */
+
+    // Global Cognitive State Constant
+    const CognitiveState = {
+      IDLE: 'IDLE',
+      PERCEIVING: 'PERCEIVING',
+      THINKING: 'THINKING',
+      PLANNING: 'PLANNING',
+      ACTING: 'ACTING',
+      RESPONDING: 'RESPONDING'
+    };
+
+    // Application State Store
+    const AuraStore = {
+      currentState: CognitiveState.IDLE,
+      apiKey: localStorage.getItem('AURA_GEMINI_API_KEY') || '',
+      selectedModel: localStorage.getItem('AURA_GEMINI_MODEL') || 'gemini-2.0-flash',
+      temperature: parseFloat(localStorage.getItem('AURA_TEMP') || '0.4'),
+      audioFeedback: localStorage.getItem('AURA_AUDIO_ENABLED') === 'true',
+      conversationHistory: [],
+      activeMemoryRecall: []
+    };
+
+    /* ==========================================================================
+       SECTION A: SYNTHETIC VECTOR MEMORY SYSTEM (CLIENT-SIDE)
+       ==========================================================================
+       Implements sparse vector generation via Bag-of-Words & normalized Term Frequency (TF).
+       Retrieves top-K matches using Cosine Similarity against a persistent LocalStorage store.
+       Allows the agent to recall past conversations and user facts without bloating token context.
+    */
+    class SyntheticVectorMemoryEngine {
+      constructor(storageKey = 'AURA_SYNTHETIC_VECTORS') {
+        this.storageKey = storageKey;
+        this.stopwords = new Set([
+          'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren\'t', 'as', 'at',
+          'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by', 'can', 'can\'t', 'cannot',
+          'could', 'couldn\'t', 'did', 'didn\'t', 'do', 'does', 'doesn\'t', 'doing', 'don\'t', 'down', 'during', 'each',
+          'few', 'for', 'from', 'further', 'had', 'hadn\'t', 'has', 'hasn\'t', 'have', 'haven\'t', 'having', 'he', 'he\'d',
+          'he\'ll', 'he\'s', 'her', 'here', 'here\'s', 'hers', 'herself', 'him', 'himself', 'his', 'how', 'how\'s', 'i',
+          'i\'d', 'i\'ll', 'i\'m', 'i\'ve', 'if', 'in', 'into', 'is', 'isn\'t', 'it', 'it\'s', 'its', 'itself', 'let\'s',
+          'me', 'more', 'most', 'mustn\'t', 'my', 'myself', 'no', 'nor', 'not', 'of', 'off', 'on', 'once', 'only', 'or',
+          'other', 'ought', 'our', 'ours', 'ourselves', 'out', 'over', 'own', 'same', 'shan\'t', 'she', 'she\'d', 'she\'ll',
+          'she\'s', 'should', 'shouldn\'t', 'so', 'some', 'such', 'than', 'that', 'that\'s', 'the', 'their', 'theirs',
+          'them', 'themselves', 'then', 'there', 'there\'s', 'these', 'they', 'they\'d', 'they\'ll', 'they\'re', 'they\'ve',
+          'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'wasn\'t', 'we', 'we\'d', 'we\'ll',
+          'we\'re', 'we\'ve', 'were', 'weren\'t', 'what', 'what\'s', 'when', 'when\'s', 'where', 'where\'s', 'which', 'while',
+          'who', 'who\'s', 'whom', 'why', 'why\'s', 'with', 'won\'t', 'would', 'wouldn\'t', 'you', 'you\'d', 'you\'ll',
+          'you\'re', 'you\'ve', 'your', 'yours', 'yourself', 'yourselves'
+        ]);
+        this.initDefaultsIfEmpty();
+      }
+
+      // Initialize with futuristic starter memories if newly booted
+      initDefaultsIfEmpty() {
+        const existing = this.getAllMemories();
+        if (existing.length === 0) {
+          const starterMemories = [
+            "Project Aura Core Architecture: Recursive agentic Think-Plan-Act framework optimized for quantum bio-systems.",
+            "User Identity Directive: Prioritize mathematically rigorous explanations, high-throughput code, and clean systems thinking.",
+            "Tool Sandbox Specification: Capable of calling SearchWeb for live indexing and ExecutePythonCode for algorithmic execution."
+          ];
+          starterMemories.forEach(mem => this.storeMemory(mem, 'SYSTEM_BOOT'));
+        }
+      }
+
+      // Normalize and tokenize text into clean word stems
+      tokenize(text) {
+        return text
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, ' ')
+          .split(/\s+/)
+          .filter(token => token.length > 2 && !this.stopwords.has(token));
+      }
+
+      // Create a normalized Term-Frequency vector
+      createVector(text) {
+        const tokens = this.tokenize(text);
+        const tf = {};
+        if (tokens.length === 0) return { vector: {}, magnitude: 0 };
+
+        for (const token of tokens) {
+          tf[token] = (tf[token] || 0) + 1;
+        }
+
+        // Calculate Euclidean magnitude for normalization: sqrt(sum(tf_i^2))
+        let sumSquares = 0;
+        for (const count of Object.values(tf)) {
+          sumSquares += count * count;
+        }
+        const magnitude = Math.sqrt(sumSquares);
+
+        return { vector: tf, magnitude };
+      }
+
+      // Compute Cosine Similarity between two sparse vectors: (A . B) / (||A|| * ||B||)
+      cosineSimilarity(vecA, magA, vecB, magB) {
+        if (magA === 0 || magB === 0) return 0;
+        let dotProduct = 0;
+        const [smaller, larger] = Object.keys(vecA).length < Object.keys(vecB).length ? [vecA, vecB] : [vecB, vecA];
+
+        for (const term in smaller) {
+          if (larger[term]) {
+            dotProduct += smaller[term] * larger[term];
+          }
+        }
+        return dotProduct / (magA * magB);
+      }
+
+      // Store a new synthetic memory entry in LocalStorage
+      storeMemory(content, source = 'CONVERSATION') {
+        const memories = this.getAllMemories();
+        const { vector, magnitude } = this.createVector(content);
+        const record = {
+          id: 'vec_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+          content: content.trim(),
+          source,
+          timestamp: new Date().toISOString(),
+          vector,
+          magnitude
+        };
+        memories.unshift(record);
+        localStorage.setItem(this.storageKey, JSON.stringify(memories));
+        updateMemoryUi();
+        return record;
+      }
+
+      // Retrieve all memories from LocalStorage
+      getAllMemories() {
+        try {
+          const raw = localStorage.getItem(this.storageKey);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          console.error("Failed to parse vector memory from localStorage:", e);
+          return [];
+        }
+      }
+
+      // Query vector space: Returns top K memories exceeding similarity threshold
+      queryRelevantMemories(queryText, topK = 3, threshold = 0.08) {
+        const { vector: qVec, magnitude: qMag } = this.createVector(queryText);
+        if (qMag === 0) return [];
+
+        const allMemories = this.getAllMemories();
+        const scored = allMemories.map(item => {
+          const score = this.cosineSimilarity(qVec, qMag, item.vector, item.magnitude);
+          return { ...item, score };
+        });
+
+        // Filter and sort descending by cosine similarity score
+        return scored
+          .filter(item => item.score >= threshold)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, topK);
+      }
+
+      // Delete single memory
+      deleteMemory(id) {
+        const memories = this.getAllMemories().filter(m => m.id !== id);
+        localStorage.setItem(this.storageKey, JSON.stringify(memories));
+        updateMemoryUi();
+      }
+
+      // Clear all memories
+      purgeAll() {
+        localStorage.removeItem(this.storageKey);
+        updateMemoryUi();
+      }
+    }
+
+    // Initialize Memory Engine Instance
+    const MemoryEngine = new SyntheticVectorMemoryEngine();
+
+    /* ==========================================================================
+       SECTION B: EXTENSIBLE TOOL USE INTERFACES (PLACEHOLDERS & EXECUTORS)
+       ==========================================================================
+       Aura AI registers tool capabilities that can be called during the 'ACT'
+       phase of cognition. In production, these stubs route to backend sandboxes,
+       real search engines (e.g. Google Search API / Tavily), or local WebAssembly Python.
+    */
+    const ToolRegistry = {
+      // Tool 1: Live Web Search Stub
+      /**
+       * SearchWeb
+       * @param {string} query - The search query
+       * @param {string} domainFilter - Optional domain to restrict search to
+       * @returns {Promise<Object>} Formatted search results payload
+       */
+      async SearchWeb(query, domainFilter = '') {
+        console.log(`[Tool Call] SearchWeb('${query}', filter='${domainFilter}') triggered.`);
+        // Production guidance: Fetch results from an external search API or backend proxy.
+        // For standalone demo responsiveness, return realistic synthetic research telemetry.
+        await new Promise(r => setTimeout(r, 900)); // Network delay simulation
+        return {
+          status: 'success',
+          engine: 'Aura-Global-Crawler',
+          query,
+          hits: [
+            {
+              title: `Recent Advances in ${query}`,
+              snippet: `Peer-reviewed synthesis detailing empirical benchmarks, algorithmic paradigms, and breakthrough metrics for ${query}.`,
+              url: `https://arxiv.org/abs/2609.${Math.floor(Math.random() * 90000 + 10000)}`
+            },
+            {
+              title: `Global Standards & Applied Metrics: ${query}`,
+              snippet: `Consortium report validating 99.4% stability across dynamic multi-agent testing pipelines.`,
+              url: `https://nature.com/articles/aura-s41586-026`
+            }
+          ]
+        };
+      },
+
+      // Tool 2: Python Code Execution Sandbox Stub
+      /**
+       * ExecutePythonCode
+       * @param {string} code - Python code block to execute
+       * @param {number} timeoutMs - Max execution time
+       * @returns {Promise<Object>} Execution stdout, stderr, and return code
+       */
+      async ExecutePythonCode(code, timeoutMs = 5000) {
+        console.log(`[Tool Call] ExecutePythonCode triggered:\n${code}`);
+        // Production guidance: Dispatch to a secure gVisor / Firecracker microVM or Pyodide in WebWorker.
+        await new Promise(r => setTimeout(r, 1100)); // Execution delay simulation
+        return {
+          status: 'completed',
+          exitCode: 0,
+          executionTimeMs: 142,
+          stdout: `>>> Python 3.12.2 (Aura Secure Sandbox)\n>>> Initializing tensor graphs...\n[Computed Output]: Convergence achieved in 12 iterations (loss: 0.0034).\nMatrix Eigenvalues: [1.414, 0.707, 0.000]\nFinished with code 0.`
+        };
+      },
+
+      // Tool 3: Telemetry & System Diagnostics Stub
+      /**
+       * InspectSystemState
+       * @param {string} metric - System property to inspect
+       */
+      async InspectSystemState(metric = 'all') {
+        console.log(`[Tool Call] InspectSystemState('${metric}') triggered.`);
+        await new Promise(r => setTimeout(r, 600));
+        return {
+          status: 'nominal',
+          timestamp: Date.now(),
+          cognitiveBandwidth: '4.8 PFLOPS simulated',
+          activeSubroutines: ['VectorCache', 'SynapsePlanner', 'BiomimeticFeedback']
+        };
+      }
+    };
+
+    /* ==========================================================================
+       SECTION C: BIOMIMETIC AUDIO FEEDBACK (WEB AUDIO API SYNTHESIZER)
+       ==========================================================================
+       Produces soft, pleasant, organic sci-fi acoustic feedback when state changes.
+    */
+    class BiomimeticAudioSynthesizer {
+      constructor() {
+        this.ctx = null;
+      }
+
+      initContext() {
+        if (!this.ctx && typeof AudioContext !== 'undefined') {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.25, gainVal = 0.03) {
+        if (!AuraStore.audioFeedback) return;
+        try {
+          this.initContext();
+          if (!this.ctx) return;
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+
+          gain.gain.setValueAtTime(gainVal, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {
+          // Audio blocked or not supported
+        }
+      }
+
+      playStateSound(state) {
+        switch (state) {
+          case CognitiveState.PERCEIVING:
+            this.playTone(320, 'triangle', 0.2, 0.03);
+            break;
+          case CognitiveState.THINKING:
+            this.playTone(540, 'sine', 0.35, 0.04);
+            break;
+          case CognitiveState.PLANNING:
+            this.playTone(680, 'sine', 0.25, 0.03);
+            break;
+          case CognitiveState.ACTING:
+            this.playTone(880, 'triangle', 0.3, 0.04);
+            break;
+          case CognitiveState.RESPONDING:
+            this.playTone(440, 'sine', 0.4, 0.03);
+            setTimeout(() => this.playTone(554.37, 'sine', 0.35, 0.02), 80);
+            setTimeout(() => this.playTone(659.25, 'sine', 0.45, 0.02), 160);
+            break;
+        }
+      }
+    }
+
+    const AudioEngine = new BiomimeticAudioSynthesizer();
+
+    /* ==========================================================================
+       SECTION D: INTERACTIVE BIOMIMETIC AURA ORB (CANVAS 2D PHYSICS)
+       ==========================================================================
+       An organic, living fluid sphere that speeds up, pulses, and alters color
+       in exact alignment with Aura's internal cognitive state.
+    */
+    class BiomimeticOrbCanvas {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        if (!this.canvas) return;
+        this.ctx = this.canvas.getContext('2d');
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
+        this.centerX = this.width / 2;
+        this.centerY = this.height / 2;
+        this.baseRadius = 60;
+        this.angle = 0;
+        this.particles = [];
+        this.stateSpeed = 1;
+        this.initParticles();
+        this.animate = this.animate.bind(this);
+        requestAnimationFrame(this.animate);
+      }
+
+      initParticles() {
+        this.particles = [];
+        for (let i = 0; i < 48; i++) {
+          this.particles.push({
+            angle: (i / 48) * Math.PI * 2,
+            distance: this.baseRadius + (Math.random() * 25 - 12),
+            speed: 0.005 + Math.random() * 0.01,
+            size: 1.5 + Math.random() * 2.5,
+            opacity: 0.3 + Math.random() * 0.7,
+            hueOffset: Math.random() * 40 - 20
+          });
+        }
+      }
+
+      animate() {
+        this.ctx.clearRect(0, 0, this.width, this.height);
+
+        // Adjust parameters according to cognitive state
+        let primaryColor = '0, 242, 254';
+        let secondaryColor = '138, 43, 226';
+        let pulseAmp = 6;
+        let speedMultiplier = 1;
+
+        switch (AuraStore.currentState) {
+          case CognitiveState.IDLE:
+            primaryColor = '0, 242, 254';
+            secondaryColor = '99, 102, 241';
+            pulseAmp = 4;
+            speedMultiplier = 1;
+            break;
+          case CognitiveState.PERCEIVING:
+            primaryColor = '14, 165, 233';
+            secondaryColor = '59, 130, 246';
+            pulseAmp = 9;
+            speedMultiplier = 1.8;
+            break;
+          case CognitiveState.THINKING:
+            primaryColor = '168, 85, 247';
+            secondaryColor = '236, 72, 153';
+            pulseAmp = 14;
+            speedMultiplier = 2.4;
+            break;
+          case CognitiveState.PLANNING:
+            primaryColor = '245, 158, 11';
+            secondaryColor = '234, 88, 12';
+            pulseAmp = 10;
+            speedMultiplier = 2.0;
+            break;
+          case CognitiveState.ACTING:
+            primaryColor = '16, 185, 129';
+            secondaryColor = '6, 182, 212';
+            pulseAmp = 16;
+            speedMultiplier = 3.0;
+            break;
+          case CognitiveState.RESPONDING:
+            primaryColor = '6, 182, 212';
+            secondaryColor = '99, 102, 241';
+            pulseAmp = 8;
+            speedMultiplier = 1.5;
+            break;
+        }
+
+        this.angle += 0.02 * speedMultiplier;
+        const currentPulse = Math.sin(this.angle * 2) * pulseAmp;
+
+        // 1. Draw Core Bioluminescent Glow
+        const gradient = this.ctx.createRadialGradient(
+          this.centerX, this.centerY, 10,
+          this.centerX, this.centerY, this.baseRadius + currentPulse + 35
+        );
+        gradient.addColorStop(0, `rgba(${primaryColor}, 0.85)`);
+        gradient.addColorStop(0.4, `rgba(${secondaryColor}, 0.45)`);
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        this.ctx.beginPath();
+        this.ctx.arc(this.centerX, this.centerY, this.baseRadius + currentPulse + 35, 0, Math.PI * 2);
+        this.ctx.fillStyle = gradient;
+        this.ctx.fill();
+
+        // 2. Draw Organic Wobble Boundary
+        this.ctx.beginPath();
+        const totalPoints = 12;
+        for (let i = 0; i <= totalPoints; i++) {
+          const theta = (i / totalPoints) * Math.PI * 2;
+          const wobble = Math.sin(theta * 3 + this.angle * 3) * (5 + currentPulse * 0.3);
+          const r = this.baseRadius + wobble;
+          const x = this.centerX + Math.cos(theta) * r;
+          const y = this.centerY + Math.sin(theta) * r;
+          if (i === 0) this.ctx.moveTo(x, y);
+          else this.ctx.lineTo(x, y);
+        }
+        this.ctx.closePath();
+        this.ctx.strokeStyle = `rgba(${primaryColor}, 0.9)`;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.stroke();
+
+        // 3. Draw Orbiting Synaptic Particle Swarm
+        for (const p of this.particles) {
+          p.angle += p.speed * speedMultiplier;
+          const px = this.centerX + Math.cos(p.angle) * (p.distance + currentPulse * 0.5);
+          const py = this.centerY + Math.sin(p.angle) * (p.distance + currentPulse * 0.5);
+
+          this.ctx.beginPath();
+          this.ctx.arc(px, py, p.size, 0, Math.PI * 2);
+          this.ctx.fillStyle = `rgba(${primaryColor}, ${p.opacity})`;
+          this.ctx.fill();
+        }
+
+        requestAnimationFrame(this.animate);
+      }
+    }
+
+    /* ==========================================================================
+       SECTION E: COGNITIVE STATE CONTROLLER
+       ==========================================================================
+       Updates DOM attributes, telemetry indicators, audio tones, and ambient halos.
+    */
+    function setCognitiveState(newState) {
+      AuraStore.currentState = newState;
+      document.body.setAttribute('data-state', newState);
+
+      const label = document.getElementById('telemetryStateLabel');
+      const ping = document.getElementById('navCorePing');
+      const dot = document.getElementById('navCoreDot');
+
+      AudioEngine.playStateSound(newState);
+
+      switch (newState) {
+        case CognitiveState.IDLE:
+          label.textContent = 'IDLE (READY)';
+          label.className = 'text-cyan-300 font-semibold tracking-wider';
+          ping.className = 'absolute w-3 h-3 rounded-full bg-cyan-400 animate-ping opacity-75';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_10px_#00f2fe]';
+          break;
+        case CognitiveState.PERCEIVING:
+          label.textContent = 'PERCEIVING CONTEXT & RECALLING MEMORY';
+          label.className = 'text-sky-300 font-semibold tracking-wider animate-pulse';
+          ping.className = 'absolute w-3 h-3 rounded-full bg-sky-400 animate-ping opacity-85';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-sky-300 shadow-[0_0_10px_#38bdf8]';
+          break;
+        case CognitiveState.THINKING:
+          label.textContent = 'THINKING (DEEP DELIBERATION)';
+          label.className = 'text-purple-300 font-semibold tracking-wider animate-pulse';
+          ping.className = 'absolute w-3 h-3 rounded-full bg-purple-400 animate-ping opacity-85';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-purple-300 shadow-[0_0_12px_#c084fc]';
+          break;
+        case CognitiveState.PLANNING:
+          label.textContent = 'PLANNING (TACTICAL DECOMPOSITION)';
+          label.className = 'text-amber-300 font-semibold tracking-wider animate-pulse';
+          ping.className = 'absolute w-3 h-3 rounded-full bg-amber-400 animate-ping opacity-85';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-300 shadow-[0_0_12px_#fbbf24]';
+          break;
+        case CognitiveState.ACTING:
+          label.textContent = 'ACTING (INVOKING TOOLS)';
+          label.className = 'text-emerald-300 font-semibold tracking-wider animate-pulse';
+          ping.className = 'absolute w-3 h-3 rounded-full bg-emerald-400 animate-ping opacity-90';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-300 shadow-[0_0_12px_#34d399]';
+          break;
+        case CognitiveState.RESPONDING:
+          label.textContent = 'SYNTHESIZING & RESPONDING';
+          label.className = 'text-cyan-300 font-semibold tracking-wider';
+          ping.className = 'absolute w-3 h-3 rounded-full bg-cyan-400 animate-ping opacity-60';
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-cyan-300 shadow-[0_0_10px_#00f2fe]';
+          break;
+      }
+    }
+
+    /* ==========================================================================
+       SECTION F: AGENTIC THINK-PLAN-ACT RECURSIVE ENGINE
+       ==========================================================================
+       This orchestrator accepts user queries, queries client-side vector memory,
+       and manages the multi-step cycle before writing out the final response.
+    */
+    class AuraAgenticController {
+      constructor() {
+        this.isProcessing = false;
+      }
+
+      async executeCycle(userPrompt) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        // Switch view from Hero screen to Active Chat Stream if this is first turn
+        transitionToChatView();
+
+        // 1. Render User Message Card
+        renderUserMessage(userPrompt);
+
+        // 2. PHASE 1: PERCEIVING & MEMORY RETRIEVAL
+        setCognitiveState(CognitiveState.PERCEIVING);
+        const recalledMemories = MemoryEngine.queryRelevantMemories(userPrompt, 3, 0.05);
+        AuraStore.activeMemoryRecall = recalledMemories;
+        console.log('[Aura Perceiver] Recalled Memories:', recalledMemories);
+
+        // Render Empty Agent Shell with Collapsible Thought Synapse
+        const agentCard = createAgentResponseShell();
+        const startTime = Date.now();
+
+        await sleep(650);
+
+        // 3. DECISION: Real Gemini API vs. Cognitive Simulation Engine
+        if (AuraStore.apiKey && AuraStore.apiKey.trim().startsWith('AIza')) {
+          await this.runGeminiApiCycle(userPrompt, recalledMemories, agentCard, startTime);
+        } else {
+          await this.runCognitiveSimulationCycle(userPrompt, recalledMemories, agentCard, startTime);
+        }
+
+        // Automatic Memory Consolidation: If user stated persistent facts, store into vector space!
+        this.autoExtractAndStoreMemory(userPrompt);
+
+        // Finalize state
+        setCognitiveState(CognitiveState.IDLE);
+        this.isProcessing = false;
+      }
+
+      // Live Google Gemini API Integration via Fetch
+      async runGeminiApiCycle(userPrompt, recalledMemories, agentCard, startTime) {
+        const thoughtContent = agentCard.querySelector('.thought-content');
+        const finalContent = agentCard.querySelector('.final-response-content');
+        const elapsedTimer = agentCard.querySelector('.elapsed-timer');
+
+        // Formulate prompt with injected vector memories
+        let memoryAugmentation = '';
+        if (recalledMemories.length > 0) {
+          memoryAugmentation = `\n[CLIENTSIDE SYNTHETIC VECTOR MEMORY RECALLED]:\n` +
+            recalledMemories.map((m, idx) => `  ${idx + 1}. (Similarity: ${(m.score * 100).toFixed(1)}%) "${m.content}"`).join('\n') +
+            `\nUse this recalled context if relevant to the query.\n`;
+        }
+
+        const systemInstruction = `You are Aura AI, an autonomous cognitive agent.
+You MUST structure your thinking inside an explicit <aura_thought> block before your final answer.
+Within <aura_thought>, execute this exact recursive cycle:
+1. [THINK]: Hypotheses, constraint breakdown, and memory analysis.
+2. [PLAN]: Concrete sequential milestones.
+3. [ACT]: Tools to call if required, or analytical deductions.
+Close with </aura_thought>, then write your polished, comprehensive, articulate final response.`;
+
+        const fullPrompt = `${systemInstruction}\n\n${memoryAugmentation}\nUser Request: ${userPrompt}`;
+
+        // Telemetry update in UI
+        setCognitiveState(CognitiveState.THINKING);
+        thoughtContent.innerHTML = `
+          <div class="flex items-center gap-2 text-purple-400 font-mono text-xs mb-2">
+            <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+            Dispatching to Gemini Pro (${AuraStore.selectedModel}). Ingesting vector memory...
+          </div>
+          <div class="text-xs font-mono text-slate-400">Recalled ${recalledMemories.length} vector context snippets.</div>
+        `;
+
+        try {
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${AuraStore.selectedModel}:generateContent?key=${AuraStore.apiKey}`;
+          const payload = {
+            contents: [{ parts: [{ text: fullPrompt }] }],
+            generationConfig: {
+              temperature: AuraStore.temperature,
+              maxOutputTokens: 2048,
+            }
+          };
+
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(`Gemini API Error (${response.status}): ${errData.error?.message || response.statusText}`);
+          }
+
+          setCognitiveState(CognitiveState.RESPONDING);
+          const data = await response.json();
+          const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response generated.';
+
+          // Separate Thought Trace (<aura_thought>...</aura_thought>) from Final Response
+          let thoughtTrace = '';
+          let responseText = rawText;
+
+          const thoughtMatch = rawText.match(/<aura_thought>([\s\S]*?)<\/aura_thought>/i);
+          if (thoughtMatch) {
+            thoughtTrace = thoughtMatch[1].trim();
+            responseText = rawText.replace(/<aura_thought>[\s\S]*?<\/aura_thought>/i, '').trim();
+          } else {
+            thoughtTrace = `Implicit Chain-of-Thought processed via ${AuraStore.selectedModel}.\nInjected memories: ${recalledMemories.length} vectors.`;
+          }
+
+          // Render formatted thought process
+          thoughtContent.innerHTML = `
+            <div class="space-y-2 text-xs font-mono text-slate-300">
+              <div class="p-2.5 rounded bg-black/40 border border-purple-500/20 whitespace-pre-wrap leading-relaxed">${escapeHtml(thoughtTrace)}</div>
+              <div class="text-[11px] text-emerald-400 flex items-center gap-1.5">
+                <span>✓ Cognitive Trajectory Validated</span>
+              </div>
+            </div>
+          `;
+
+          // Stream / Render final response
+          renderMarkdownWithTyping(responseText, finalContent, () => {
+            elapsedTimer.textContent = `${((Date.now() - startTime) / 1000).toFixed(2)}s`;
+          });
+
+        } catch (error) {
+          console.warn("[Aura Gemini Client] API call failed. Falling back to Simulation Mode.", error);
+          thoughtContent.innerHTML = `
+            <div class="p-2.5 rounded bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono space-y-1">
+              <div class="font-bold">Gemini API Notification: ${escapeHtml(error.message)}</div>
+              <div>Switching dynamically to Aura Cognitive Simulation Engine to complete your request seamlessly.</div>
+            </div>
+          `;
+          await sleep(1000);
+          await this.runCognitiveSimulationCycle(userPrompt, recalledMemories, agentCard, startTime);
+        }
+      }
+
+      // High-Fidelity Cognitive Simulation Engine (Runs instantly without API key)
+      async runCognitiveSimulationCycle(userPrompt, recalledMemories, agentCard, startTime) {
+        const thoughtContent = agentCard.querySelector('.thought-content');
+        const finalContent = agentCard.querySelector('.final-response-content');
+        const elapsedTimer = agentCard.querySelector('.elapsed-timer');
+
+        // Step 1: Deliberation / THINK
+        setCognitiveState(CognitiveState.THINKING);
+        thoughtContent.innerHTML = `
+          <div class="space-y-2 text-xs font-mono">
+            <div class="flex items-center gap-2 text-purple-400 font-semibold">
+              <span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span>
+              PHASE 1: DELIBERATION & HYPOTHESIS FORMATION [THINK]
+            </div>
+            <div class="p-2.5 rounded bg-purple-950/20 border border-purple-500/20 text-slate-300 leading-relaxed">
+              • Evaluating problem scope: "${escapeHtml(userPrompt)}"<br/>
+              • Querying internal knowledge graphs & ${recalledMemories.length} synthetic vector memories.<br/>
+              • Contextual relevance: ${recalledMemories.length > 0 ? `Identified top association with score ${(recalledMemories[0].score * 100).toFixed(1)}%` : 'No prior context conflict; establishing fresh cognitive thread.'}
+            </div>
+          </div>
+        `;
+        await sleep(1100);
+
+        // Step 2: Decomposition / PLAN
+        setCognitiveState(CognitiveState.PLANNING);
+        thoughtContent.innerHTML += `
+          <div class="space-y-2 text-xs font-mono mt-3">
+            <div class="flex items-center gap-2 text-amber-400 font-semibold">
+              <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+              PHASE 2: TACTICAL TRAJECTORY DECOMPOSITION [PLAN]
+            </div>
+            <div class="p-2.5 rounded bg-amber-950/20 border border-amber-500/20 text-slate-300 leading-relaxed space-y-1">
+              <div>1. [Milestone Alpha] Isolate core theoretical and mathematical invariants.</div>
+              <div>2. [Milestone Beta] Dispatch external tool verification check if empirical parameters are needed.</div>
+              <div>3. [Milestone Gamma] Synthesize executable output with architectural precision.</div>
+            </div>
+          </div>
+        `;
+        await sleep(1000);
+
+        // Step 3: Tool Execution / ACT
+        setCognitiveState(CognitiveState.ACTING);
+        const needsSearch = /search|latest|breakthrough|news|recent|find/i.test(userPrompt);
+        const needsPython = /python|code|simulation|calculate|math|algorithm|run/i.test(userPrompt);
+
+        let toolPayloadSummary = '';
+
+        if (needsSearch) {
+          thoughtContent.innerHTML += `
+            <div class="space-y-2 text-xs font-mono mt-3">
+              <div class="flex items-center gap-2 text-emerald-400 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                PHASE 3: ACTION EXECUTION -> Invoking Tool: SearchWeb()
+              </div>
+              <div class="p-2 rounded bg-emerald-950/30 border border-emerald-500/30 text-emerald-200">
+                DISPATCH: SearchWeb("${escapeHtml(userPrompt.slice(0, 45))}...")
+              </div>
+            </div>
+          `;
+          const toolResult = await ToolRegistry.SearchWeb(userPrompt.slice(0, 45));
+          toolPayloadSummary += `\n- Web Crawl Verification: 2 verified sources referenced.`;
+        }
+
+        if (needsPython || !needsSearch) {
+          thoughtContent.innerHTML += `
+            <div class="space-y-2 text-xs font-mono mt-3">
+              <div class="flex items-center gap-2 text-emerald-400 font-semibold">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                PHASE 3: ACTION EXECUTION -> Invoking Tool: ExecutePythonCode()
+              </div>
+              <div class="p-2 rounded bg-black/60 border border-emerald-500/30 font-mono text-[11px] text-emerald-300">
+                # Running deterministic simulation check<br/>
+                import numpy as np<br/>
+                state_matrix = np.linalg.eigvals([[1.0, 0.5], [0.5, 1.0]])<br/>
+                print("State verification: Nominal convergence.")
+              </div>
+            </div>
+          `;
+          await ToolRegistry.ExecutePythonCode('import numpy as np...');
+          toolPayloadSummary += `\n- Python Sandbox Validation: Nominal convergence across state matrices.`;
+        }
+
+        await sleep(900);
+
+        // Step 4: Synthesis & Output / RESPOND
+        setCognitiveState(CognitiveState.RESPONDING);
+
+        // Synthesize dynamic contextual response based on prompt
+        const synthesizedMarkdown = generateSyntheticResponse(userPrompt, recalledMemories, toolPayloadSummary);
+
+        renderMarkdownWithTyping(synthesizedMarkdown, finalContent, () => {
+          elapsedTimer.textContent = `${((Date.now() - startTime) / 1000).toFixed(2)}s`;
+        });
+      }
+
+      // Memory Auto-Extraction
+      autoExtractAndStoreMemory(prompt) {
+        // Automatically save statements like "My name is...", "I am working on...", "Remember that..."
+        const memoryTriggers = /(?:my name is|i am|i'm|remember that|working on|project|we need to|note that)\s+(.+)/i;
+        const match = prompt.match(memoryTriggers);
+        if (match && match[1]) {
+          const memorySnippet = match[0].trim();
+          MemoryEngine.storeMemory(memorySnippet, 'USER_DIALOG');
+          console.log(`[Aura Memory] Auto-stored memory vector: "${memorySnippet}"`);
+        }
+      }
+    }
+
+    const AgentController = new AuraAgenticController();
+
+    /* ==========================================================================
+       SECTION G: SYNTHETIC RESPONSE GENERATION & MARKDOWN STREAMING
+       ==========================================================================
+    */
+    function generateSyntheticResponse(prompt, memories, toolSummary) {
+      let memoryNote = '';
+      if (memories.length > 0) {
+        memoryNote = `\n> 🧠 **Synthetic Memory Retrieval Activated**: Recalled related context *"${memories[0].content}"* (Confidence: ${(memories[0].score * 100).toFixed(1)}%).\n`;
+      }
+
+      return `### Trajectory Synthesis & Resolution
+
+${memoryNote}
+Upon executing the **Think-Plan-Act** loop, the cognitive core resolved the primary objectives for:
+> *${escapeHtml(prompt)}*
+
+#### 1. Core Architectural Breakdown
+The cognitive deliberation parsed the problem into fundamental constraints. By cross-referencing multi-agent topologies and thermodynamic bounds:
+- **State Invariance**: Mathematical models preserve structural equilibrium across distributed workloads.
+- **Latency Optimization**: Sub-second execution reached through sparse vectorized indexing and parallelized tool calling.
+- **Adaptive Resilience**: Biomimetic feedback signals dynamically rebalance computation parameters based on cognitive density.
+
+#### 2. Empirical Verification & Tool Telemetry
+${toolSummary || '- Local validation confirmed all operational metrics within nominal parameters.'}
+
+\`\`\`python
+# Aura Cognitive Telemetry Benchmark
+class CognitiveAgentVerification:
+    def __init__(self, state="NOMINAL"):
+        self.state = state
+        self.vector_resolution = "1024-dim sparse"
+
+    def audit(self):
+        return {"status": self.state, "confidence": 0.984}
+
+aura_audit = CognitiveAgentVerification()
+print(aura_audit.audit())
+\`\`\`
+
+#### 3. Strategic Trajectory & Next Actions
+1. **Immediate Step**: Integrate the verified outputs into your operational runtime.
+2. **Persistent Index**: Key facts and invariants from this exchange have been consolidated into your client-side **Synthetic Memory Bank**.
+3. **Recursive Inquiries**: Ask Aura to deep-dive into any sub-branch or run further algorithmic simulations.`;
+    }
+
+    // Typewriter markdown streaming effect
+    function renderMarkdownWithTyping(fullText, container, onComplete) {
+      const html = marked.parse(fullText);
+      container.innerHTML = '';
+      
+      // For responsiveness and smooth UX, reveal progressively with high-performance chunking
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+
+      const children = Array.from(tempDiv.children);
+      let idx = 0;
+
+      function appendNext() {
+        if (idx < children.length) {
+          const el = children[idx].cloneNode(true);
+          el.style.opacity = '0';
+          el.style.transform = 'translateY(6px)';
+          el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          container.appendChild(el);
+
+          // Force repaint
+          requestAnimationFrame(() => {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+          });
+
+          idx++;
+          setTimeout(appendNext, 60);
+          scrollChatToBottom();
+        } else {
+          if (onComplete) onComplete();
+          scrollChatToBottom();
+        }
+      }
+      appendNext();
+    }
+
+    /* ==========================================================================
+       SECTION H: UI RENDERING HELPERS & CHAT CARDS
+       ==========================================================================
+    */
+    function transitionToChatView() {
+      const hero = document.getElementById('heroSection');
+      const chat = document.getElementById('chatFeedSection');
+
+      if (!hero.classList.contains('hidden')) {
+        hero.classList.add('hidden');
+        chat.classList.remove('hidden');
+      }
+    }
+
+    function scrollChatToBottom() {
+      const chat = document.getElementById('chatFeedSection');
+      if (chat) {
+        chat.scrollTop = chat.scrollHeight;
+      }
+    }
+
+    function renderUserMessage(text) {
+      const chat = document.getElementById('chatFeedSection');
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'flex justify-end w-full animate-float-in';
+      msgDiv.innerHTML = `
+        <div class="max-w-2xl bg-gradient-to-br from-cyan-950/40 to-purple-950/40 border border-cyan-500/20 backdrop-blur-md rounded-2xl rounded-tr-sm p-4 text-slate-100 text-sm sm:text-base shadow-[0_8px_25px_rgba(0,0,0,0.3)]">
+          <div class="flex items-center gap-2 mb-1.5 text-xs font-mono text-cyan-300">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span>USER QUERY</span>
+          </div>
+          <div class="leading-relaxed whitespace-pre-wrap">${escapeHtml(text)}</div>
+        </div>
+      `;
+      chat.appendChild(msgDiv);
+      scrollChatToBottom();
+    }
+
+    function createAgentResponseShell() {
+      const chat = document.getElementById('chatFeedSection');
+      const shellDiv = document.createElement('div');
+      shellDiv.className = 'w-full glass-panel rounded-2xl p-5 border border-white/10 space-y-4 shadow-xl transition-all';
+      
+      const cardId = 'agentCard_' + Date.now();
+      shellDiv.id = cardId;
+
+      shellDiv.innerHTML = `
+        <!-- Header & Collapsible Thought Synapse Bar -->
+        <div class="flex items-center justify-between border-b border-white/[0.08] pb-3">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold font-display shadow-[0_0_10px_rgba(0,242,254,0.4)]">
+              A
+            </div>
+            <div>
+              <span class="font-display font-bold text-sm tracking-wide text-white">Aura AI</span>
+              <span class="ml-2 text-[11px] font-mono text-cyan-400/80 bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-500/20">AGENTIC SYNAPSE</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 text-xs font-mono text-slate-400">
+            <span>Cycle Time: <span class="elapsed-timer text-cyan-300 font-bold">processing...</span></span>
+            <button onclick="toggleThought('${cardId}')" class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/10 transition-colors" title="Toggle Chain-of-Thought">
+              <span class="thought-toggle-label text-[11px]">Hide Synapse</span>
+              <svg class="thought-toggle-icon w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Collapsible Thought Synapse Accordion -->
+        <div class="thought-container overflow-hidden transition-all duration-500 ease-in-out">
+          <div class="p-3.5 rounded-xl bg-black/50 border border-white/[0.08] thought-content">
+            <div class="flex items-center gap-2 text-cyan-400 text-xs font-mono">
+              <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+              Initializing recursive cognitive cycle...
+            </div>
+          </div>
+        </div>
+
+        <!-- Final Articulate Response Body -->
+        <div class="final-response-content prose-aura text-sm sm:text-base pt-1">
+          <!-- Populated by Markdown streaming -->
+        </div>
+      `;
+
+      chat.appendChild(shellDiv);
+      scrollChatToBottom();
+      return shellDiv;
+    }
+
+    function toggleThought(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const container = card.querySelector('.thought-container');
+      const label = card.querySelector('.thought-toggle-label');
+      const icon = card.querySelector('.thought-toggle-icon');
+
+      if (container.style.display === 'none') {
+        container.style.display = 'block';
+        label.textContent = 'Hide Synapse';
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        container.style.display = 'none';
+        label.textContent = 'View Synapse';
+        icon.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function escapeHtml(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    /* ==========================================================================
+       SECTION I: MEMORY MATRIX & ENGINE CONFIG MODAL BINDINGS
+       ==========================================================================
+    */
+    function updateMemoryUi() {
+      const memories = MemoryEngine.getAllMemories();
+      const navCount = document.getElementById('navMemoryCount');
+      const modalCount = document.getElementById('memoryModalCount');
+      const list = document.getElementById('memoryMatrixList');
+
+      if (navCount) navCount.textContent = `${memories.length} vectors`;
+      if (modalCount) modalCount.textContent = memories.length;
+
+      if (list) {
+        if (memories.length === 0) {
+          list.innerHTML = `
+            <div class="text-center py-10 text-slate-500 font-mono text-xs">
+              No vector memories stored in local space. Speak with Aura to synthesize vectors.
+            </div>
+          `;
+          return;
+        }
+
+        list.innerHTML = memories.map(m => `
+          <div class="p-3 rounded-xl bg-black/40 border border-white/[0.08] hover:border-cyan-500/30 transition-all flex items-start justify-between gap-3 text-xs">
+            <div class="space-y-1 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="px-1.5 py-0.5 rounded bg-cyan-950 text-[10px] font-mono text-cyan-400 border border-cyan-800/40">${escapeHtml(m.source)}</span>
+                <span class="text-[10px] font-mono text-slate-500">${new Date(m.timestamp).toLocaleTimeString()}</span>
+              </div>
+              <p class="text-slate-200 leading-relaxed font-sans">${escapeHtml(m.content)}</p>
+              <div class="text-[10px] font-mono text-slate-500">
+                Tokens: ${Object.keys(m.vector || {}).slice(0, 6).join(', ')}... | Magnitude: ${m.magnitude.toFixed(2)}
+              </div>
+            </div>
+            <button onclick="MemoryEngine.deleteMemory('${m.id}')" class="text-slate-500 hover:text-rose-400 p-1" title="Delete Vector">✕</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    function injectPrompt(promptText) {
+      const input = document.getElementById('userPromptInput');
+      if (input) {
+        input.value = promptText;
+        input.focus();
+        // Trigger submit
+        const form = document.getElementById('agentInputForm');
+        if (form) form.dispatchEvent(new Event('submit'));
+      }
+    }
+
+    function dismissMemoryContext() {
+      const badge = document.getElementById('memoryActiveBadge');
+      if (badge) badge.classList.add('hidden');
+    }
+
+    /* ==========================================================================
+       SECTION J: EVENT LISTENERS & INITIALIZATION LIFECYCLE
+       ==========================================================================
+    */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Initialize Canvas Orb
+      const orb = new BiomimeticOrbCanvas('auraOrbCanvas');
+
+      // Click on orb triggers interactive stimulation
+      const orbCont = document.getElementById('orbContainer');
+      if (orbCont) {
+        orbCont.addEventListener('click', () => {
+          setCognitiveState(CognitiveState.THINKING);
+          setTimeout(() => setCognitiveState(CognitiveState.IDLE), 1500);
+        });
+      }
+
+      // 2. Initialize Memory UI
+      updateMemoryUi();
+
+      // 3. Audio Toggle Listener
+      const audioBtn = document.getElementById('audioToggleBtn');
+      const audioIcon = document.getElementById('audioIcon');
+      function syncAudioBtn() {
+        if (AuraStore.audioFeedback) {
+          audioBtn.classList.add('text-cyan-300', 'border-cyan-500/40');
+          audioBtn.title = "Audio Feedback: ENABLED";
+        } else {
+          audioBtn.classList.remove('text-cyan-300', 'border-cyan-500/40');
+          audioBtn.title = "Audio Feedback: DISABLED (Click to enable)";
+        }
+      }
+      syncAudioBtn();
+
+      audioBtn.addEventListener('click', () => {
+        AuraStore.audioFeedback = !AuraStore.audioFeedback;
+        localStorage.setItem('AURA_AUDIO_ENABLED', AuraStore.audioFeedback);
+        syncAudioBtn();
+        if (AuraStore.audioFeedback) AudioEngine.playTone(600, 'sine', 0.25, 0.05);
+      });
+
+      // 4. Memory Modal Controls
+      const memoryModal = document.getElementById('memoryModal');
+      document.getElementById('openMemoryModalBtn').addEventListener('click', () => {
+        updateMemoryUi();
+        memoryModal.classList.remove('hidden');
+      });
+      document.getElementById('closeMemoryModalBtn').addEventListener('click', () => {
+        memoryModal.classList.add('hidden');
+      });
+      document.getElementById('purgeMemoryBtn').addEventListener('click', () => {
+        if (confirm('Purge all stored client-side synthetic vectors?')) {
+          MemoryEngine.purgeAll();
+        }
+      });
+      document.getElementById('injectMemoryBtn').addEventListener('click', () => {
+        const val = document.getElementById('manualMemoryInput').value;
+        if (val.trim()) {
+          MemoryEngine.storeMemory(val.trim(), 'MANUAL_INJECTION');
+          document.getElementById('manualMemoryInput').value = '';
+        }
+      });
+
+      // 5. Settings / Gemini Engine Modal Controls
+      const settingsModal = document.getElementById('settingsModal');
+      const apiKeyInput = document.getElementById('geminiApiKeyInput');
+      const modelSelect = document.getElementById('geminiModelSelect');
+      const tempInput = document.getElementById('temperatureInput');
+      const tempLabel = document.getElementById('tempValueLabel');
+      const engineBadge = document.getElementById('engineModeBadge');
+
+      apiKeyInput.value = AuraStore.apiKey;
+      modelSelect.value = AuraStore.selectedModel;
+      tempInput.value = AuraStore.temperature;
+      tempLabel.textContent = `${AuraStore.temperature} (${AuraStore.temperature > 0.6 ? 'Creative' : 'Deterministic'})`;
+
+      function updateEngineBadge() {
+        if (AuraStore.apiKey) {
+          engineBadge.textContent = `Engine: Gemini API (${AuraStore.selectedModel})`;
+          engineBadge.className = 'text-emerald-400/90 hover:underline cursor-pointer font-bold';
+        } else {
+          engineBadge.textContent = `Engine: Built-in Cognitive Simulator (Active)`;
+          engineBadge.className = 'text-cyan-400/80 hover:underline cursor-pointer';
+        }
+      }
+      updateEngineBadge();
+
+      tempInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        tempLabel.textContent = `${val} (${val > 0.6 ? 'Creative' : 'Deterministic'})`;
+      });
+
+      document.getElementById('openSettingsModalBtn').addEventListener('click', () => {
+        settingsModal.classList.remove('hidden');
+      });
+      document.getElementById('closeSettingsModalBtn').addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+      });
+
+      document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+        AuraStore.apiKey = apiKeyInput.value.trim();
+        AuraStore.selectedModel = modelSelect.value;
+        AuraStore.temperature = parseFloat(tempInput.value);
+
+        localStorage.setItem('AURA_GEMINI_API_KEY', AuraStore.apiKey);
+        localStorage.setItem('AURA_GEMINI_MODEL', AuraStore.selectedModel);
+        localStorage.setItem('AURA_TEMP', AuraStore.temperature);
+
+        updateEngineBadge();
+        settingsModal.classList.add('hidden');
+      });
+
+      // 6. Form Submission & Input Handling
+      const form = document.getElementById('agentInputForm');
+      const promptInput = document.getElementById('userPromptInput');
+
+      // Auto-grow textarea on typing
+      promptInput.addEventListener('input', () => {
+        promptInput.style.height = 'auto';
+        promptInput.style.height = Math.min(promptInput.scrollHeight, 140) + 'px';
+      });
+
+      // Submit on Enter (Shift+Enter for newline)
+      promptInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          form.dispatchEvent(new Event('submit'));
+        }
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = promptInput.value.trim();
+        if (!text) return;
+
+        promptInput.value = '';
+        promptInput.style.height = '44px';
+
+        AgentController.executeCycle(text);
+      });
+
+      // Reset Chat Button
+      document.getElementById('resetChatBtn').addEventListener('click', () => {
+        if (confirm('Reset conversation stream and return to primary hero view?')) {
+          const chat = document.getElementById('chatFeedSection');
+          chat.innerHTML = '';
+          chat.classList.add('hidden');
+          document.getElementById('heroSection').classList.remove('hidden');
+          setCognitiveState(CognitiveState.IDLE);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

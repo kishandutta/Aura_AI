@@ -1,0 +1,142 @@
+/* ==============================================================================
+   AURA AI — FRONTEND STYLESHEET (public/style.css)
+   ==============================================================================
+   Ultra-clean, minimalist aesthetics inspired by the modern Gemini & ChatGPT
+   landing experiences. Focuses on premium dark typography, subtle ambient glows,
+   and clean message ergonomics.
+   ============================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+:root {
+  --aura-bg: #090d16;
+  --aura-surface: rgba(18, 24, 38, 0.7);
+  --aura-border: rgba(255, 255, 255, 0.08);
+  --aura-glow: rgba(56, 189, 248, 0.15);
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background-color: var(--aura-bg);
+  color: #f1f5f9;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ambient Radial Glow Backdrop */
+.aura-ambient-glow {
+  background: radial-gradient(circle at 50% 20%, rgba(56, 189, 248, 0.12) 0%, rgba(139, 92, 246, 0.08) 35%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Minimalist Glass Card */
+.glass-panel {
+  background: var(--aura-surface);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--aura-border);
+}
+
+/* Input Container with subtle glow on focus */
+.glass-input {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus-within {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.2);
+}
+
+/* Clean Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Typing Indicator Animation */
+.typing-dot {
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* Voice Input (Microphone Listening Animation) */
+.mic-active {
+  background: linear-gradient(135deg, #ef4444, #ec4899) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: micPulse 1.5s infinite;
+}
+
+@keyframes micPulse {
+  0% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  70% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(0.97);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Voice Output (Speaker Playing Animation) */
+.speaking-active {
+  color: #38bdf8 !important;
+  background-color: rgba(56, 189, 248, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.4) !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+  animation: speakerPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes speakerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* Mobile Touch Ergonomics & Responsiveness */
+button, input, textarea {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+#chatMessages {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.touch-press {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease;
+}
+
+.touch-press:active {
+  transform: scale(0.92);
+}
+
+/* Prevent auto-zoom on iOS inputs */
+@media (max-width: 640px) {
+  #messageInput {
+    font-size: 16px !important; /* Prevents iOS Safari input focus auto-zoom */
+  }
+}
+
+

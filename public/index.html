@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aura AI — Intelligent Conversational Assistant</title>
+  <meta name="description" content="Production Full-Stack Conversational AI powered by Node.js, Express, MongoDB, and Google Gemini." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="min-h-[100dvh] h-[100dvh] flex flex-col relative overflow-hidden selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- Ambient Lighting Effect -->
+  <div class="fixed inset-0 aura-ambient-glow z-0"></div>
+
+  <!-- ==========================================================================
+       HEADER NAVIGATION (Mobile-First Responsive)
+       ========================================================================== -->
+  <header class="relative z-10 w-full px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between border-b border-white/[0.05] shrink-0">
+    <!-- Brand Name -->
+    <div class="flex items-center gap-2 sm:gap-2.5">
+      <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-tr from-sky-400 to-purple-500 flex items-center justify-center shadow-[0_0_12px_rgba(56,189,248,0.4)]">
+        <span class="text-white font-bold text-[10px] sm:text-xs tracking-wider">A</span>
+      </div>
+      <span class="text-base sm:text-lg font-semibold tracking-wide text-white">Aura AI</span>
+    </div>
+
+    <!-- Backend & Database Status Indicator -->
+    <div class="flex items-center gap-2">
+      <div id="statusBadge" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-[11px] sm:text-xs font-mono text-slate-400">
+        <span id="statusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="statusText"><span class="hidden sm:inline">Connected to Express</span><span class="sm:hidden">Online</span></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==========================================================================
+       MAIN CONTENT CONTAINER
+       ========================================================================== -->
+  <main class="relative z-10 flex-1 flex flex-col max-w-4xl w-full mx-auto px-3 sm:px-6 overflow-hidden">
+
+    <!-- HERO / WELCOME STATE (Visible before messages are sent) -->
+    <div id="welcomeHero" class="flex-1 flex flex-col items-center justify-center text-center transition-opacity duration-500 my-auto px-2 py-4">
+      <!-- Minimalist Glowing Orb -->
+      <div class="w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-sky-400 via-indigo-500 to-purple-500 p-0.5 shadow-[0_0_35px_rgba(56,189,248,0.3)] mb-4 sm:mb-6 animate-pulse">
+        <div class="w-full h-full bg-[#090d16] rounded-full flex items-center justify-center">
+          <svg class="w-6 h-6 sm:w-8 sm:h-8 text-sky-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+      </div>
+
+      <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-2 sm:mb-3">
+        How can <span class="bg-gradient-to-r from-sky-400 to-purple-400 bg-clip-text text-transparent">Aura AI</span> help you today?
+      </h1>
+      <p class="text-xs sm:text-base text-slate-400 max-w-md font-light leading-relaxed mb-4 sm:mb-6 px-2">
+        An intelligent conversational assistant powered by Google Gemini and backed by persistent MongoDB memory.
+      </p>
+
+      <!-- Minimal Quick Prompts -->
+      <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 max-w-lg">
+        <button onclick="setPrompt('Explain how quantum entanglement works in simple terms.')" class="px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs text-slate-300 transition-all touch-press">
+          ✨ Quantum entanglement explained
+        </button>
+        <button onclick="setPrompt('Suggest a mindful daily routine for high productivity.')" class="px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs text-slate-300 transition-all touch-press">
+          🧘 Productivity routine
+        </button>
+        <button onclick="setPrompt('Draft an engaging announcement for our new project.')" class="px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs text-slate-300 transition-all touch-press">
+          ✍️ Project announcement
+        </button>
+      </div>
+    </div>
+
+    <!-- CONVERSATION STREAM (Scrollable Message List) -->
+    <div id="chatMessages" class="hidden flex-1 overflow-y-auto space-y-4 sm:space-y-6 py-4 sm:py-6 px-1 sm:px-2">
+      <!-- Chat message bubbles will be inserted here dynamically by public/app.js -->
+    </div>
+
+    <!-- TYPING INDICATOR -->
+    <div id="typingIndicator" class="hidden pb-2 sm:pb-3 flex items-center gap-2 text-slate-400 text-xs">
+      <span class="text-sky-400">Aura AI is thinking</span>
+      <span class="inline-flex gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 typing-dot"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 typing-dot"></span>
+        <span class="w-1.5 h-1.5 rounded-full bg-sky-400 typing-dot"></span>
+      </span>
+    </div>
+
+    <!-- ==========================================================================
+         INPUT OMNI-BAR (Mobile Optimized & Touch Friendly)
+         ========================================================================== -->
+    <div class="w-full pb-3 sm:pb-6 pt-1 sm:pt-2 shrink-0">
+      <!-- Voice Listening Status Banner -->
+      <div id="voiceStatusBanner" class="hidden mb-2 px-3 py-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-mono flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+          <span id="voiceStatusText" class="text-[11px] sm:text-xs">Listening... speak now (auto-sends on pause)</span>
+        </div>
+        <button type="button" onclick="handleVoiceBannerAction()" class="text-xs text-rose-300 hover:text-white font-bold ml-2 touch-press">Send Now</button>
+      </div>
+
+      <form id="chatForm" class="glass-input rounded-2xl p-1.5 sm:p-2.5 flex items-center gap-1.5 sm:gap-2">
+        <textarea
+          id="messageInput"
+          rows="1"
+          placeholder="Ask Aura AI, or tap mic to speak..."
+          class="flex-1 bg-transparent border-0 text-slate-100 placeholder-slate-500 text-base sm:text-sm focus:ring-0 resize-none py-2 px-2.5 sm:px-3 focus:outline-none max-h-32"
+          style="min-height: 44px;"
+        ></textarea>
+
+        <!-- Voice Input (Microphone Button) - 44px touch target on mobile -->
+        <button
+          type="button"
+          id="micBtn"
+          class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] active:bg-white/[0.15] border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 cursor-pointer shadow-sm touch-press"
+          title="Voice Input (Speech-to-Text)"
+        >
+          <svg id="micIcon" class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        </button>
+
+        <!-- Send Button - 44px touch target on mobile -->
+        <button
+          type="submit"
+          id="sendBtn"
+          class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 active:from-sky-600 active:to-indigo-700 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_0_15px_rgba(56,189,248,0.3)] shrink-0 touch-press"
+          title="Send message"
+        >
+          <svg class="w-4 h-4 sm:w-4.5 sm:h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </button>
+      </form>
+      <div class="text-center mt-1.5 sm:mt-2">
+        <span class="text-[10px] sm:text-[11px] text-slate-500 font-light">
+          Aura AI communicates conversationally. Tap mic for voice input.
+        </span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Frontend Logic Script -->
+  <script src="app.js"></script>
+</body>
+</html>
