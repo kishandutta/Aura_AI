@@ -99,18 +99,60 @@ body {
   }
 }
 
-/* Voice Output (Speaker Playing Animation) */
-.speaking-active {
+/* ==============================================================================
+   VOICE OUTPUT (Text-to-Speech Speaker Button & Active State)
+   ============================================================================== */
+.speak-btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.speak-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.speak-btn:active {
+  transform: scale(0.92);
+}
+
+.speak-btn.speaking-active {
   color: #38bdf8 !important;
-  background-color: rgba(56, 189, 248, 0.15) !important;
-  border-color: rgba(56, 189, 248, 0.4) !important;
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.3);
+  background-color: rgba(56, 189, 248, 0.16) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
   animation: speakerPulse 1.8s ease-in-out infinite;
 }
 
 @keyframes speakerPulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.08); }
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 8px rgba(56, 189, 248, 0.2);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 18px rgba(56, 189, 248, 0.45);
+    border-color: rgba(56, 189, 248, 0.7) !important;
+  }
 }
 
 /* Mobile Touch Ergonomics & Responsiveness */

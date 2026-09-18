@@ -40,6 +40,14 @@ const statusText = document.getElementById('statusText');
 // Tracks whether the user has sent at least one message in this session
 let hasStartedChat = false;
 
+// ==============================================================================
+// 🎨 ICONS: CLEAN SVG ICONS FOR TEXT-TO-SPEECH (SPEAKER & STOP STATES)
+// ==============================================================================
+const TTS_ICONS = {
+  speaker: `<svg class="w-4 h-4 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`,
+  stop: `<svg class="w-3.5 h-3.5 pointer-events-none" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2.5"></rect></svg>`
+};
+
 /**
  * ==============================================================================
  * HELPER: SET PROMPT FROM QUICK BUTTONS
@@ -110,17 +118,16 @@ function appendMessage(sender, text) {
         <span class="text-white font-bold text-[9px] sm:text-[10px]">A</span>
       </div>
       <div class="flex-1 space-y-1 sm:space-y-1.5 min-w-0">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-2">
           <span class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Aura AI</span>
-          <!-- Speaker button for Text-to-Speech (44px touch area friendly) -->
+          <!-- Speaker button for Text-to-Speech -->
           <button
             type="button"
-            class="speak-btn text-slate-400 hover:text-sky-300 active:text-sky-200 p-2 sm:p-1.5 rounded-lg hover:bg-white/[0.08] active:bg-white/[0.15] transition-all cursor-pointer border border-transparent touch-press"
-            title="Read response aloud (Text-to-Speech)"
+            class="speak-btn touch-press"
+            title="Read response aloud"
+            aria-label="Read response aloud"
           >
-            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            </svg>
+            ${TTS_ICONS.speaker}
           </button>
         </div>
         <div class="text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(text)}</div>
@@ -326,59 +333,212 @@ function stopVoiceRecognition(shouldSend = false) {
   }
 }
 
+
 /**
  * ==============================================================================
  * 🔊 TEXT-TO-SPEECH (VOICE OUTPUT VIA WEB SPEECH API)
  * ==============================================================================
+ * Production-grade Speech Synthesis controller:
+ * - Strips markdown symbols, code tags, and URLs for natural voice pronunciation
+ * - Toggles between playing (Stop icon) and idle (Speaker icon)
+ * - Safe cancellation of ongoing speech sessions before initiating new speech
+ * - Fixes Chrome 15-second pause freeze with an interval keep-alive heartbeat
+ * - Keeps global reference to SpeechSynthesisUtterance to prevent V8 garbage collection
+ * - Handles asynchronous voice list loading across Chrome, Android, Edge, & Safari
  */
 let activeSpeakBtn = null;
+let currentUtterance = null;
+let keepAliveTimer = null;
+let cachedVoices = [];
 
+// Initialize voices with async event listener for Chrome/Android
+function initVoices() {
+  if (!('speechSynthesis' in window)) return;
+  cachedVoices = window.speechSynthesis.getVoices() || [];
+  if (window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      cachedVoices = window.speechSynthesis.getVoices() || [];
+    };
+  }
+}
+initVoices();
+
+/**
+ * Selects the most natural, clear voice available for speech synthesis.
+ */
+function getBestVoice() {
+  if (!cachedVoices || cachedVoices.length === 0) {
+    if ('speechSynthesis' in window) {
+      cachedVoices = window.speechSynthesis.getVoices() || [];
+    }
+  }
+  if (!cachedVoices || cachedVoices.length === 0) return null;
+
+  // 1. Prioritize natural sounding system voices
+  const preferredKeywords = [
+    'Google US English',
+    'Google UK English Female',
+    'Google UK English Male',
+    'Natural',
+    'Samantha',
+    'Daniel',
+    'Karen',
+    'Microsoft Jenny Online',
+    'Microsoft Guy Online',
+    'Microsoft Zira',
+    'Microsoft David'
+  ];
+
+  for (const name of preferredKeywords) {
+    const match = cachedVoices.find(v => (v.name && v.name.includes(name)) || (v.voiceURI && v.voiceURI.includes(name)));
+    if (match) return match;
+  }
+
+  // 2. Match browser's language (e.g., en-US, en-GB)
+  const userLang = (navigator.language || 'en-US').toLowerCase();
+  const langMatch = cachedVoices.find(v => v.lang && v.lang.toLowerCase().replace('_', '-').startsWith(userLang.slice(0, 2)));
+  if (langMatch) return langMatch;
+
+  // 3. Fallback to default voice or first available
+  return cachedVoices.find(v => v.default) || cachedVoices[0] || null;
+}
+
+/**
+ * Pre-processes text to ensure clean, natural pronunciation:
+ * Removes markdown formatting, code blocks, bullet syntax, and raw URLs.
+ */
+function cleanTextForSpeech(text) {
+  if (!text) return '';
+  return text
+    // Replace multi-line code blocks ``` ... ``` with friendly note
+    .replace(/```[\s\S]*?```/g, ' Code snippet omitted. ')
+    // Replace inline code `...`
+    .replace(/`([^`]+)`/g, '$1')
+    // Convert markdown links [Text](url) to Text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove bold and italics formatting (**bold**, *italic*, __bold__)
+    .replace(/[*_~]{1,3}(.*?)[*_~]{1,3}/g, '$1')
+    // Remove headers (# Header)
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove blockquote markers (> Quote)
+    .replace(/^>\s+/gm, '')
+    // Remove bullet points and numbered list symbols
+    .replace(/^[\s]*[-*+]\s+/gm, '')
+    .replace(/^[\s]*\d+\.\s+/gm, '')
+    // Clean URLs
+    .replace(/https?:\/\/\S+/g, 'link')
+    // Collapse excess whitespace
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Toggles speech synthesis on/off for a given text and button element.
+ */
 function toggleSpeech(text, btn) {
   if (!('speechSynthesis' in window)) {
-    alert('Text-to-Speech is not supported by your browser.');
+    alert('Text-to-Speech is not supported by your browser. Please use Chrome, Edge, or Safari.');
     return;
   }
 
-  // If clicking the same button that is currently playing, stop it
-  if (window.speechSynthesis.speaking && activeSpeakBtn === btn) {
+  // If clicking the same button that is currently speaking, stop and reset
+  if (activeSpeakBtn === btn && (window.speechSynthesis.speaking || window.speechSynthesis.pending)) {
     stopSpeechSynthesis();
     return;
   }
 
-  // Cancel any existing speech before starting a new one
+  // Cancel any prior speech across any bubble before starting anew
   stopSpeechSynthesis();
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = navigator.language || 'en-US';
+  const speechText = cleanTextForSpeech(text);
+  if (!speechText) return;
+
+  // Chrome/Android fix: ensure synthesis engine is not stuck in paused state
+  window.speechSynthesis.cancel();
+  if (window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
+  }
+
+  const utterance = new SpeechSynthesisUtterance(speechText);
+  currentUtterance = utterance; // Retain reference to prevent V8 garbage collection drop
+
+  const voice = getBestVoice();
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang || 'en-US';
+  } else {
+    utterance.lang = navigator.language || 'en-US';
+  }
+
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
 
+  // Activate UI state: show Stop icon and pulse animation
   activeSpeakBtn = btn;
   btn.classList.add('speaking-active');
-  btn.title = "Click to stop speaking";
+  btn.innerHTML = TTS_ICONS.stop;
+  btn.title = "Stop reading aloud";
+  btn.setAttribute('aria-label', "Stop reading aloud");
+
+  // Keep-alive timer for Chrome 15s pause bug on long utterances
+  clearInterval(keepAliveTimer);
+  keepAliveTimer = setInterval(() => {
+    if (window.speechSynthesis.speaking) {
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    } else {
+      clearInterval(keepAliveTimer);
+    }
+  }, 10000);
 
   utterance.onend = () => {
     stopSpeechSynthesis();
   };
 
-  utterance.onerror = (e) => {
-    console.warn('Speech synthesis error:', e);
+  utterance.onerror = (event) => {
+    if (event.error !== 'canceled' && event.error !== 'interrupted') {
+      console.warn('Speech synthesis notice:', event.error);
+    }
     stopSpeechSynthesis();
   };
 
-  window.speechSynthesis.speak(utterance);
+  try {
+    window.speechSynthesis.speak(utterance);
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  } catch (err) {
+    console.warn('Speech synthesis playback error:', err);
+    stopSpeechSynthesis();
+  }
 }
 
+/**
+ * Halts active speech synthesis immediately and resets all button UI states.
+ */
 function stopSpeechSynthesis() {
+  clearInterval(keepAliveTimer);
+  keepAliveTimer = null;
+
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
+
   if (activeSpeakBtn) {
     activeSpeakBtn.classList.remove('speaking-active');
-    activeSpeakBtn.title = "Read response aloud (Text-to-Speech)";
+    activeSpeakBtn.innerHTML = TTS_ICONS.speaker;
+    activeSpeakBtn.title = "Read response aloud";
+    activeSpeakBtn.setAttribute('aria-label', "Read response aloud");
     activeSpeakBtn = null;
   }
+
+  currentUtterance = null;
 }
+
+// Clean up any ongoing speech synthesis if user navigates away or refreshes
+window.addEventListener('beforeunload', () => {
+  stopSpeechSynthesis();
+});
 
 /**
  * ==============================================================================
@@ -401,17 +561,16 @@ function createStreamingBotBubble() {
       <span class="text-white font-bold text-[9px] sm:text-[10px]">A</span>
     </div>
     <div class="flex-1 space-y-1 sm:space-y-1.5 min-w-0">
-      <div class="flex items-center justify-between">
+      <div class="flex items-center justify-between gap-2">
         <span class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Aura AI</span>
         <!-- Speaker button for Text-to-Speech (appears when response completes) -->
         <button
           type="button"
-          class="speak-btn hidden text-slate-400 hover:text-sky-300 active:text-sky-200 p-2 sm:p-1.5 rounded-lg hover:bg-white/[0.08] active:bg-white/[0.15] transition-all cursor-pointer border border-transparent touch-press"
-          title="Read response aloud (Text-to-Speech)"
+          class="speak-btn hidden"
+          title="Read response aloud"
+          aria-label="Read response aloud"
         >
-          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-          </svg>
+          ${TTS_ICONS.speaker}
         </button>
       </div>
       <div class="text-content text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words"></div>
@@ -438,6 +597,9 @@ function createStreamingBotBubble() {
       isFinalized = true;
       if (accumulatedText.trim() && speakBtn) {
         speakBtn.classList.remove('hidden');
+        speakBtn.innerHTML = TTS_ICONS.speaker;
+        speakBtn.title = "Read response aloud";
+        speakBtn.setAttribute('aria-label', "Read response aloud");
         speakBtn.addEventListener('click', () => {
           toggleSpeech(accumulatedText, speakBtn);
         });
