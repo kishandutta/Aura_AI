@@ -351,7 +351,7 @@ let currentUtterance = null;
 let keepAliveTimer = null;
 let cachedVoices = [];
 
-// Initialize voices with async event listener for Chrome/Android
+// Initialize voices with async event listener for Chrome/Android/Safari
 function initVoices() {
   if (!('speechSynthesis' in window)) return;
   cachedVoices = window.speechSynthesis.getVoices() || [];
@@ -360,47 +360,180 @@ function initVoices() {
       cachedVoices = window.speechSynthesis.getVoices() || [];
     };
   }
+  if (typeof window.speechSynthesis.addEventListener === 'function') {
+    window.speechSynthesis.addEventListener('voiceschanged', () => {
+      cachedVoices = window.speechSynthesis.getVoices() || [];
+    });
+  }
 }
 initVoices();
 
 /**
- * Selects the most natural, clear voice available for speech synthesis.
+ * Automatically detects language & script from text:
+ * 1. Hindi (Devanagari script: /[\u0900-\u097F]/) -> 'hi-IN'
+ * 2. Bengali script (/[\u0980-\u09FF]/) -> 'bn-IN'
+ * 3. Additional Indic & international scripts (Tamil, Telugu, Urdu, Japanese, Chinese, etc.)
+ * 4. Browser Language Detector API (if supported)
+ * 5. Default / Latin / English -> 'en-US'
+ *
+ * @param {string} text
+ * @returns {Promise<string>} BCP-47 language tag
  */
-function getBestVoice() {
-  if (!cachedVoices || cachedVoices.length === 0) {
-    if ('speechSynthesis' in window) {
-      cachedVoices = window.speechSynthesis.getVoices() || [];
+async function detectLanguage(text) {
+  if (!text || typeof text !== 'string') return 'en-US';
+
+  // 1. Hindi (Devanagari script: U+0900 to U+097F)
+  if (/[\u0900-\u097F]/.test(text)) {
+    return 'hi-IN';
+  }
+
+  // 2. Bengali script (U+0980 to U+09FF)
+  if (/[\u0980-\u09FF]/.test(text)) {
+    return 'bn-IN';
+  }
+
+  // 3. Other Indic scripts
+  if (/[\u0B80-\u0BFF]/.test(text)) return 'ta-IN'; // Tamil
+  if (/[\u0C00-\u0C7F]/.test(text)) return 'te-IN'; // Telugu
+  if (/[\u0A80-\u0AFF]/.test(text)) return 'gu-IN'; // Gujarati
+  if (/[\u0C80-\u0CFF]/.test(text)) return 'kn-IN'; // Kannada
+  if (/[\u0D00-\u0D7F]/.test(text)) return 'ml-IN'; // Malayalam
+  if (/[\u0A00-\u0A7F]/.test(text)) return 'pa-IN'; // Punjabi
+  if (/[\u0B00-\u0B7F]/.test(text)) return 'or-IN'; // Odia
+
+  // 4. International scripts
+  if (/[\u0600-\u06FF]/.test(text)) return 'ur-PK'; // Urdu / Arabic
+  if (/[\u3040-\u30FF]/.test(text)) return 'ja-JP'; // Japanese
+  if (/[\u4E00-\u9FFF]/.test(text)) return 'zh-CN'; // Chinese
+  if (/[\uAC00-\uD7AF]/.test(text)) return 'ko-KR'; // Korean
+  if (/[\u0400-\u04FF]/.test(text)) return 'ru-RU'; // Cyrillic
+
+  // 5. Browser Language Detector API check (Chrome/Edge AI API)
+  if (typeof window !== 'undefined' && window.ai?.languageDetector) {
+    try {
+      const capabilities = await window.ai.languageDetector.capabilities?.();
+      if (capabilities && capabilities.available !== 'no') {
+        const detector = await window.ai.languageDetector.create();
+        const results = await detector.detect(text);
+        if (results && results.length > 0 && results[0].confidence > 0.5) {
+          const detected = results[0].detectedLanguage;
+          const bcp47Map = {
+            'hi': 'hi-IN', 'bn': 'bn-IN', 'en': 'en-US', 'es': 'es-ES',
+            'fr': 'fr-FR', 'de': 'de-DE', 'it': 'it-IT', 'pt': 'pt-BR',
+            'ja': 'ja-JP', 'zh': 'zh-CN', 'ko': 'ko-KR', 'ru': 'ru-RU',
+            'ar': 'ar-SA'
+          };
+          return bcp47Map[detected] || detected;
+        }
+      }
+    } catch (_) {
+      // Gracefully continue to fallback
     }
   }
-  if (!cachedVoices || cachedVoices.length === 0) return null;
 
-  // 1. Prioritize natural sounding system voices
-  const preferredKeywords = [
-    'Google US English',
-    'Google UK English Female',
-    'Google UK English Male',
-    'Natural',
-    'Samantha',
-    'Daniel',
-    'Karen',
-    'Microsoft Jenny Online',
-    'Microsoft Guy Online',
-    'Microsoft Zira',
-    'Microsoft David'
-  ];
+  // 6. Default fallback: Latin / English
+  return 'en-US';
+}
 
-  for (const name of preferredKeywords) {
-    const match = cachedVoices.find(v => (v.name && v.name.includes(name)) || (v.voiceURI && v.voiceURI.includes(name)));
-    if (match) return match;
+/**
+ * Searches and selects a matching voice whose 'lang' or 'name' matches the detected language.
+ * If a specific regional voice is not found on the client device, returns null so the
+ * browser's native fallback synthesis engine can pronounce the native script via utterance.lang.
+ *
+ * @param {string} detectedLang - BCP-47 tag (e.g. 'hi-IN', 'bn-IN', 'en-US')
+ * @returns {SpeechSynthesisVoice|null}
+ */
+function findMatchingVoice(detectedLang) {
+  if (!('speechSynthesis' in window)) return null;
+
+  // Refresh voices immediately from window.speechSynthesis
+  let voices = window.speechSynthesis.getVoices() || [];
+  if (voices.length > 0) {
+    cachedVoices = voices;
+  } else if (cachedVoices && cachedVoices.length > 0) {
+    voices = cachedVoices;
+  }
+  if (!voices || voices.length === 0) return null;
+
+  const targetLang = (detectedLang || 'en-US').toLowerCase().replace('_', '-');
+  const primaryLang = targetLang.split('-')[0];
+
+  // Specific keyword mappings for voice search
+  const langNameKeywords = {
+    'hi': ['hindi', 'hi-in', 'hi_in', 'india', 'lekha', 'kalpana', 'hemant'],
+    'bn': ['bengali', 'bangla', 'bn-in', 'bn-bd', 'bn_in', 'bn_bd', 'bashkar', 'tanishaa'],
+    'ta': ['tamil', 'ta-in'],
+    'te': ['telugu', 'te-in'],
+    'gu': ['gujarati', 'gu-in'],
+    'kn': ['kannada', 'kn-in'],
+    'ml': ['malayalam', 'ml-in'],
+    'pa': ['punjabi', 'pa-in'],
+    'ur': ['urdu', 'ur-pk', 'ur-in'],
+    'ja': ['japanese', 'ja-jp'],
+    'zh': ['chinese', 'mandarin', 'zh-cn'],
+    'ko': ['korean', 'ko-kr'],
+    'es': ['spanish', 'es-es', 'es-mx'],
+    'fr': ['french', 'fr-fr'],
+    'de': ['german', 'de-de'],
+    'ru': ['russian', 'ru-ru']
+  };
+
+  // 1. Exact match on BCP-47 tag (e.g. 'hi-in', 'bn-in', 'en-us')
+  const exactMatch = voices.find(v => {
+    const vLang = (v.lang || '').toLowerCase().replace('_', '-');
+    return vLang === targetLang;
+  });
+  if (exactMatch) return exactMatch;
+
+  // 2. Prefix match on voice.lang (e.g. 'hi' matches 'hi-IN', 'bn' matches 'bn-BD')
+  const prefixMatch = voices.find(v => {
+    const vLang = (v.lang || '').toLowerCase().replace('_', '-');
+    return vLang.startsWith(primaryLang + '-') || vLang === primaryLang;
+  });
+  if (prefixMatch) return prefixMatch;
+
+  // 3. Search voice.name or voice.voiceURI for matching keywords (e.g. 'Hindi', 'Bengali')
+  const keywords = langNameKeywords[primaryLang] || [primaryLang];
+  const nameMatch = voices.find(v => {
+    const vName = (v.name || '').toLowerCase();
+    const vUri = (v.voiceURI || '').toLowerCase();
+    return keywords.some(kw => vName.includes(kw) || vUri.includes(kw));
+  });
+  if (nameMatch) return nameMatch;
+
+  // 4. For English, pick highest-quality natural voice or default
+  if (primaryLang === 'en') {
+    const preferredEnglishVoices = [
+      'google us english',
+      'google uk english female',
+      'natural',
+      'samantha',
+      'microsoft jenny online',
+      'microsoft guy online',
+      'microsoft zira',
+      'microsoft david'
+    ];
+    for (const kw of preferredEnglishVoices) {
+      const match = voices.find(v => {
+        const vName = (v.name || '').toLowerCase();
+        const vUri = (v.voiceURI || '').toLowerCase();
+        return vName.includes(kw) || vUri.includes(kw);
+      });
+      if (match) return match;
+    }
+    const englishFallback = voices.find(v => (v.lang || '').toLowerCase().startsWith('en'));
+    if (englishFallback) return englishFallback;
+    return voices.find(v => v.default) || voices[0] || null;
   }
 
-  // 2. Match browser's language (e.g., en-US, en-GB)
-  const userLang = (navigator.language || 'en-US').toLowerCase();
-  const langMatch = cachedVoices.find(v => v.lang && v.lang.toLowerCase().replace('_', '-').startsWith(userLang.slice(0, 2)));
-  if (langMatch) return langMatch;
+  // 5. If specific regional voice is not found on client device, return null
+  // so browser fallback synthesis engine can use utterance.lang directly!
+  return null;
+}
 
-  // 3. Fallback to default voice or first available
-  return cachedVoices.find(v => v.default) || cachedVoices[0] || null;
+// Alias for backwards compatibility
+function getBestVoice(lang = 'en-US') {
+  return findMatchingVoice(lang);
 }
 
 /**
@@ -434,8 +567,9 @@ function cleanTextForSpeech(text) {
 
 /**
  * Toggles speech synthesis on/off for a given text and button element.
+ * Accurately speaks any detected language (Hindi, Bengali, English, etc.).
  */
-function toggleSpeech(text, btn) {
+async function toggleSpeech(text, btn) {
   if (!('speechSynthesis' in window)) {
     alert('Text-to-Speech is not supported by your browser. Please use Chrome, Edge, or Safari.');
     return;
@@ -453,21 +587,29 @@ function toggleSpeech(text, btn) {
   const speechText = cleanTextForSpeech(text);
   if (!speechText) return;
 
-  // Chrome/Android fix: ensure synthesis engine is not stuck in paused state
+  // Clear stuck audio queues and resume if paused
   window.speechSynthesis.cancel();
   if (window.speechSynthesis.paused) {
     window.speechSynthesis.resume();
   }
 
+  // 1. Automatic Language & Script Detection
+  const detectedLang = await detectLanguage(speechText);
+
+  // 2. Dynamic Voice Matching & Utterance setup
   const utterance = new SpeechSynthesisUtterance(speechText);
   currentUtterance = utterance; // Retain reference to prevent V8 garbage collection drop
 
-  const voice = getBestVoice();
-  if (voice) {
-    utterance.voice = voice;
-    utterance.lang = voice.lang || 'en-US';
-  } else {
-    utterance.lang = navigator.language || 'en-US';
+  // Always ensure utterance.lang is assigned correctly
+  utterance.lang = detectedLang;
+
+  // Search and select matching voice
+  const matchingVoice = findMatchingVoice(detectedLang);
+  if (matchingVoice) {
+    utterance.voice = matchingVoice;
+    if (matchingVoice.lang) {
+      utterance.lang = matchingVoice.lang;
+    }
   }
 
   utterance.rate = 1.0;
@@ -502,7 +644,12 @@ function toggleSpeech(text, btn) {
     stopSpeechSynthesis();
   };
 
+  // 3. Reliable Speech Playback: Clear queues and resume immediately before speak()
   try {
+    window.speechSynthesis.cancel();
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
     window.speechSynthesis.speak(utterance);
     if (window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
