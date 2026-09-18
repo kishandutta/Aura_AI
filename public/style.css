@@ -15,11 +15,23 @@
   --aura-glow: rgba(56, 189, 248, 0.15);
 }
 
+html {
+  height: 100%;
+  height: 100dvh;
+}
+
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background-color: var(--aura-bg);
   color: #f1f5f9;
   -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  height: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 /* Ambient Radial Glow Backdrop */
@@ -164,6 +176,14 @@ button, input, textarea {
 #chatMessages {
   -webkit-overflow-scrolling: touch;
   scroll-behavior: smooth;
+  padding-bottom: 130px !important;
+}
+
+/* Input Omni-Bar container anchored at the bottom with clean spacing & safe area clearance */
+.input-container-bar {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 12px));
+  position: relative;
+  z-index: 20;
 }
 
 .touch-press {

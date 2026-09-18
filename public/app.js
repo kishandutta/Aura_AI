@@ -177,7 +177,8 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognition = null;
 let isListening = false;
 let silenceTimer = null;
-let finalRecordedText = '';
+let speechEndTimer = null;
+let accumulatedFinalTranscript = '';
 const SILENCE_TIMEOUT_MS = 1400; // 1.4 seconds of silence triggers automatic submission
 
 if (SpeechRecognition) {
@@ -189,7 +190,7 @@ if (SpeechRecognition) {
   // Triggered when microphone starts listening
   recognition.onstart = () => {
     isListening = true;
-    finalRecordedText = '';
+    accumulatedFinalTranscript = '';
     micBtn.classList.add('mic-active');
     micBtn.title = "Listening... speak now (click to submit)";
     voiceStatusBanner.classList.remove('hidden');
@@ -199,29 +200,42 @@ if (SpeechRecognition) {
   };
 
   // Triggered as words are recognized in real time
+  // Prevents repeating phrases by separating finalized results from interim results
   recognition.onresult = (event) => {
-    let interimText = '';
-    let completedText = '';
+    let currentInterim = '';
 
-    for (let i = 0; i < event.results.length; i++) {
-      const res = event.results[i];
-      if (res.isFinal) {
-        completedText += res[0].transcript + ' ';
+    // Loop strictly from event.resultIndex to event.results.length
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const transcriptPiece = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        // Append only finalized text to the clean accumulated transcript
+        const piece = transcriptPiece.trim();
+        if (piece) {
+          accumulatedFinalTranscript += (accumulatedFinalTranscript ? ' ' : '') + piece;
+        }
       } else {
-        interimText += res[0].transcript;
+        // Interim text is kept separate and never appended to accumulatedFinalTranscript
+        currentInterim += transcriptPiece;
       }
     }
 
-    finalRecordedText = (completedText + interimText).trim();
+    // Construct full string by combining clean finalized text with current interim
+    const cleanFinal = accumulatedFinalTranscript.trim();
+    const cleanInterim = currentInterim.trim();
+    const fullTranscript = cleanFinal && cleanInterim
+      ? `${cleanFinal} ${cleanInterim}`
+      : (cleanFinal || cleanInterim);
 
-    if (finalRecordedText) {
-      messageInput.value = finalRecordedText;
+    // Replace the input field value with the clean accumulated transcript (do not continuously append)
+    if (fullTranscript) {
+      messageInput.value = fullTranscript;
       // Auto-grow textarea to fit content
       messageInput.style.height = 'auto';
       messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
 
       // Reset the silence countdown timer on every recognized word
       clearTimeout(silenceTimer);
+      clearTimeout(speechEndTimer);
 
       // Auto-dispatch after 1.4 seconds of silence!
       silenceTimer = setTimeout(() => {
@@ -233,10 +247,23 @@ if (SpeechRecognition) {
     }
   };
 
+  // Triggered when user stops speaking
+  recognition.onspeechend = () => {
+    console.log('🎙️ [Voice Input]: Speech end detected (user stopped speaking).');
+    clearTimeout(speechEndTimer);
+    speechEndTimer = setTimeout(() => {
+      if (isListening && messageInput.value.trim()) {
+        console.log('🎙️ [Voice Input]: Auto-submitting after speech end pause...');
+        autoSubmitVoiceMessage();
+      }
+    }, 900);
+  };
+
   // Handle errors (e.g. microphone permission denied)
   recognition.onerror = (event) => {
     console.warn('Speech recognition error:', event.error);
     clearTimeout(silenceTimer);
+    clearTimeout(speechEndTimer);
     if (event.error === 'not-allowed') {
       alert('Microphone permission was denied. Please allow microphone access in your browser address bar.');
     }
@@ -246,6 +273,7 @@ if (SpeechRecognition) {
   // Triggered when recognition engine session closes
   recognition.onend = () => {
     clearTimeout(silenceTimer);
+    clearTimeout(speechEndTimer);
     // If the engine closed naturally and there is text that hasn't been sent yet, auto-send it!
     if (isListening && messageInput.value.trim()) {
       autoSubmitVoiceMessage();
@@ -260,10 +288,13 @@ if (SpeechRecognition) {
  */
 function autoSubmitVoiceMessage() {
   clearTimeout(silenceTimer);
-  const textToSend = messageInput.value.trim();
+  clearTimeout(speechEndTimer);
+  // Ensure clean accumulated finalized transcript is submitted
+  const textToSend = (accumulatedFinalTranscript.trim() || messageInput.value.trim());
 
-  // Reset listening state
+  // Reset listening state and stop recognition engine properly
   stopVoiceRecognition(false);
+  accumulatedFinalTranscript = '';
 
   if (textToSend) {
     // Clear input field
@@ -304,8 +335,9 @@ function toggleVoiceRecognition() {
     }
   } else {
     try {
-      finalRecordedText = '';
+      accumulatedFinalTranscript = '';
       clearTimeout(silenceTimer);
+      clearTimeout(speechEndTimer);
       recognition.start();
     } catch (err) {
       console.warn('Error starting speech recognition:', err);
@@ -315,6 +347,8 @@ function toggleVoiceRecognition() {
 
 function stopVoiceRecognition(shouldSend = false) {
   clearTimeout(silenceTimer);
+  clearTimeout(speechEndTimer);
+  const wasListening = isListening;
   isListening = false;
 
   if (recognition) {
@@ -328,7 +362,12 @@ function stopVoiceRecognition(shouldSend = false) {
   voiceStatusBanner.classList.add('hidden');
   messageInput.placeholder = "Ask Aura AI, or tap mic to speak...";
 
-  if (shouldSend && messageInput.value.trim()) {
+  // Ensure clean accumulated transcript is preserved in the input if present
+  if (accumulatedFinalTranscript.trim()) {
+    messageInput.value = accumulatedFinalTranscript.trim();
+  }
+
+  if (shouldSend && wasListening && messageInput.value.trim()) {
     autoSubmitVoiceMessage();
   }
 }
