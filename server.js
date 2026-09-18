@@ -103,91 +103,108 @@ async function connectDatabase() {
 connectDatabase();
 
 // ==============================================================================
-// 🤖 5. DIRECT GOOGLE GEMINI API INTEGRATION (gemini-flash-latest / fallback)
+// 📦 4.5 GOOGLE GENERATIVE AI SDK & STREAMING CONFIGURATION
 // ==============================================================================
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+
 /**
- * Sends an HTTP POST request to Google Gemini API and returns the plain text response.
+ * Retrieves the last 4 to 6 conversation turns from MongoDB to provide context
+ * while trimming historical context to keep latency ultra-low and eliminate thinking delays.
  * 
- * @param {string} userPrompt - The message typed by the user
- * @returns {Promise<string>} The conversational response from Gemini
+ * @param {number} maxTurns - Maximum number of past conversation turns to fetch (default: 5)
+ * @returns {Promise<Array<{ role: string, parts: Array<{ text: string }> }>>}
  */
-async function sendToGemini(userPrompt) {
+async function getTrimmedChatHistory(maxTurns = 5) {
+  if (!isMongoConnected) {
+    return [];
+  }
+
+  try {
+    // Fetch only the most recent N turns from MongoDB (4 to 6 turns)
+    const recentChats = await Chat.find()
+      .sort({ createdAt: -1 })
+      .limit(maxTurns)
+      .lean();
+
+    // Reverse to chronological order (oldest to newest)
+    const chronological = recentChats.reverse();
+
+    // Map each turn into Gemini contents format with alternating user and model roles
+    const historyContents = [];
+    for (const turn of chronological) {
+      if (turn.userPrompt && turn.botResponse) {
+        historyContents.push({
+          role: 'user',
+          parts: [{ text: turn.userPrompt }]
+        });
+        historyContents.push({
+          role: 'model',
+          parts: [{ text: turn.botResponse }]
+        });
+      }
+    }
+
+    return historyContents;
+  } catch (err) {
+    console.warn('⚠️ [MongoDB History Handler]: Could not load history context:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Initiates streaming response from Google Gemini API using generateContentStream.
+ * Prioritizes 'gemini-1.5-flash' for ultra-fast latency, with graceful fallback.
+ * 
+ * @param {Array} contents - The trimmed conversation history plus the new user prompt
+ * @returns {Promise<{ stream: AsyncIterable<any>, modelUsed: string }>}
+ */
+async function generateGeminiStream(contents) {
   const activeKey = GEMINI_API_KEY ? GEMINI_API_KEY.trim() : "";
 
   if (!activeKey || activeKey === "PASTE_YOUR_REAL_API_KEY_HERE") {
     throw new Error(
-      "Gemini API key is missing! Please open 'server.js' and ensure your key is pasted at line 24."
+      "Gemini API key is missing! Please configure GEMINI_API_KEY in your .env file."
     );
   }
 
-  // Candidate models in order of priority.
-  // If one experiences a temporary spike (503) or 404, the server seamlessly falls back to the next.
+  const genAI = new GoogleGenerativeAI(activeKey);
+
+  // Candidate models prioritized for ultra-fast response speed:
+  // Prioritizes gemini-1.5-flash as requested, with resilient fallbacks for 503/404
   const candidateModels = [
+    'gemini-1.5-flash',
+    'gemini-flash-lite-latest',
     'gemini-flash-latest',
-    'gemini-3.5-flash',
-    'gemini-1.5-flash'
+    'gemini-3.5-flash-lite'
   ];
 
-  // System instruction enforcing STRICT conversational response rule
   const systemInstruction = 
     "You are Aura AI, an exceptionally smart, warm, and articulate conversational companion. " +
     "STRICT RULE: Always respond in natural, elegant, human-friendly conversational language. " +
     "Do NOT output random code blocks, backticks, or programming scripts unless the user explicitly requests code.";
 
-  const payload = {
-    system_instruction: {
-      parts: [
-        { text: systemInstruction }
-      ]
-    },
-    contents: [
-      {
-        parts: [
-          { text: userPrompt }
-        ]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 1024
-    }
-  };
-
   let lastError = null;
 
-  // Try candidate models sequentially
   for (const modelName of candidateModels) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeKey}`;
-
     try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        systemInstruction: systemInstruction,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1024
+        }
       });
 
-      const responseData = await response.json().catch(() => ({}));
-
-      // If successful, extract text and return immediately
-      if (response.ok) {
-        const generatedText = responseData.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (generatedText) {
-          return generatedText.trim();
-        }
-      }
-
-      // If this model had high demand (503) or not found (404), record and try next model
-      const msg = responseData.error?.message || `HTTP ${response.status}`;
-      console.warn(`⚠️ [Model ${modelName} unavailable]: ${msg}. Attempting fallback...`);
-      lastError = msg;
-
-    } catch (networkErr) {
-      lastError = networkErr.message;
+      const responseStream = await model.generateContentStream({ contents });
+      return { stream: responseStream.stream, modelUsed: modelName };
+    } catch (err) {
+      console.warn(`⚠️ [Model ${modelName} stream error]: ${err.message}. Trying next candidate...`);
+      lastError = err.message;
     }
   }
 
-  // If all candidate models failed, throw the last received error
-  throw new Error(`Google Gemini Error: ${lastError || 'Unable to generate response at this time.'}`);
+  throw new Error(`Google Gemini Error: ${lastError || 'Unable to generate response stream.'}`);
 }
 
 // ==============================================================================
@@ -206,6 +223,7 @@ app.get('/api/health', (req, res) => {
 
   res.json({
     status: 'online',
+    model: 'gemini-1.5-flash',
     serverTime: new Date().toISOString(),
     apiKeyConfigured: isKeyConfigured,
     databaseConnected: isMongoConnected
@@ -214,12 +232,13 @@ app.get('/api/health', (req, res) => {
 
 /**
  * PRIMARY CHAT ROUTE: POST /api/chat
- * Receives: { "message": "user question" }
- * Returns:  { "success": true, "reply": "Gemini answer", "savedToDb": boolean }
+ * Receives: { "message": "user question", "stream": true }
+ * Supports real-time Server-Sent Events (SSE) streaming via generateContentStream,
+ * and falls back to standard JSON when requested.
  */
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, stream = true } = req.body;
 
     // 1. Input Validation
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
@@ -232,49 +251,121 @@ app.post('/api/chat', async (req, res) => {
     const cleanUserPrompt = message.trim();
     console.log(`\n💬 [Incoming User Prompt]: "${cleanUserPrompt.substring(0, 80)}..."`);
 
-    // 2. Direct HTTP call to Google Gemini with automatic fallback
-    const aiReply = await sendToGemini(cleanUserPrompt);
-    console.log(`✨ [Gemini Response Generated]: "${aiReply.substring(0, 80)}..."`);
+    // 2. Fetch trimmed conversation history from MongoDB (last 4 to 6 turns)
+    const historyContents = await getTrimmedChatHistory(5);
+    const fullContents = [
+      ...historyContents,
+      { role: 'user', parts: [{ text: cleanUserPrompt }] }
+    ];
 
-    // 3. Save to MongoDB if connected
-    let savedToDb = false;
-    let savedId = null;
-    if (isMongoConnected) {
+    const isStream = stream !== false && req.headers.accept !== 'application/json';
+
+    if (isStream) {
+      // 3. Setup Server-Sent Events (SSE) headers for real-time token streaming
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      if (res.flushHeaders) res.flushHeaders();
+
+      let fullAiReply = '';
+      let activeModel = 'gemini-1.5-flash';
+
       try {
-        const savedRecord = await Chat.create({
-          userPrompt: cleanUserPrompt,
-          botResponse: aiReply,
-          metadata: {
-            model: 'gemini-flash',
-            clientIp: req.ip || '127.0.0.1'
+        const streamResult = await generateGeminiStream(fullContents);
+        activeModel = streamResult.modelUsed;
+
+        for await (const chunk of streamResult.stream) {
+          const chunkText = chunk.text();
+          if (chunkText) {
+            fullAiReply += chunkText;
+            res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
           }
-        });
-        savedToDb = true;
-        savedId = savedRecord._id;
-      } catch (dbError) {
-        console.error('⚠️ [MongoDB Save Failed]:', dbError.message);
+        }
+
+        console.log(`✨ [Gemini Stream Completed via ${activeModel}]: "${fullAiReply.substring(0, 80)}..."`);
+
+        // Save conversation turn to MongoDB if connected
+        let savedToDb = false;
+        let savedId = null;
+        if (isMongoConnected && fullAiReply.trim()) {
+          try {
+            const savedRecord = await Chat.create({
+              userPrompt: cleanUserPrompt,
+              botResponse: fullAiReply.trim(),
+              metadata: {
+                model: activeModel,
+                clientIp: req.ip || '127.0.0.1'
+              }
+            });
+            savedToDb = true;
+            savedId = savedRecord._id;
+          } catch (dbError) {
+            console.error('⚠️ [MongoDB Save Failed]:', dbError.message);
+          }
+        }
+
+        // Notify client that stream is complete
+        res.write(`data: ${JSON.stringify({ done: true, model: activeModel, savedToDb, chatId: savedId })}\n\n`);
+        res.end();
+
+      } catch (streamErr) {
+        console.error('❌ [Streaming Error in /api/chat]:', streamErr.message);
+        res.write(`data: ${JSON.stringify({ error: streamErr.message })}\n\n`);
+        res.end();
       }
+
+    } else {
+      // Non-streaming fallback
+      const streamResult = await generateGeminiStream(fullContents);
+      let fullAiReply = '';
+      for await (const chunk of streamResult.stream) {
+        fullAiReply += chunk.text();
+      }
+
+      let savedToDb = false;
+      let savedId = null;
+      if (isMongoConnected && fullAiReply.trim()) {
+        try {
+          const savedRecord = await Chat.create({
+            userPrompt: cleanUserPrompt,
+            botResponse: fullAiReply.trim(),
+            metadata: {
+              model: streamResult.modelUsed,
+              clientIp: req.ip || '127.0.0.1'
+            }
+          });
+          savedToDb = true;
+          savedId = savedRecord._id;
+        } catch (dbError) {
+          console.error('⚠️ [MongoDB Save Failed]:', dbError.message);
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        reply: fullAiReply.trim(),
+        model: streamResult.modelUsed,
+        savedToDb,
+        chatId: savedId
+      });
     }
 
-    // 4. Send clean conversational response to frontend
-    return res.status(200).json({
-      success: true,
-      reply: aiReply,
-      savedToDb: savedToDb,
-      chatId: savedId
-    });
-
   } catch (error) {
-    // 5. Robust Error Handling: Log the error and return clean JSON to the frontend
     console.error('❌ [Error in /api/chat]:', error.message);
 
     const isConfigError = error.message.includes('API key is missing');
     const statusCode = isConfigError ? 400 : 500;
 
-    return res.status(statusCode).json({
-      success: false,
-      error: error.message
-    });
+    if (!res.headersSent) {
+      return res.status(statusCode).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
+      res.end();
+    }
   }
 });
 
@@ -315,7 +406,7 @@ app.get('*', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n=============================================================');
   console.log(`🚀 [Aura AI Backend]: Running smoothly on http://localhost:${PORT}`);
-  console.log(`🔑 [AI Engine]: Google Gemini Flash (Active)`);
+  console.log(`🔑 [AI Engine]: Google Gemini 1.5 Flash (Streaming Active)`);
   console.log(`🗄️ [Database]: Connecting with Mongoose`);
   console.log('=============================================================\n');
 });

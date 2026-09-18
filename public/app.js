@@ -46,10 +46,16 @@ let hasStartedChat = false;
  * ==============================================================================
  */
 function setPrompt(text) {
+  if (!text) return;
+  if (sendBtn && sendBtn.disabled) return;
   messageInput.value = text;
+  messageInput.style.height = 'auto';
+  messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
   messageInput.focus();
-  chatForm.dispatchEvent(new Event('submit'));
+  chatForm.dispatchEvent(new Event('submit', { cancelable: true }));
 }
+// Explicitly expose on window for button click-to-prompt handlers
+window.setPrompt = setPrompt;
 
 /**
  * ==============================================================================
@@ -376,8 +382,83 @@ function stopSpeechSynthesis() {
 
 /**
  * ==============================================================================
- * CORE FUNCTION: SEND MESSAGE TO BACKEND SERVER
+ * UI HELPER: CREATE STREAMING BOT MESSAGE BUBBLE
  * ==============================================================================
+ * Creates an interactive message bubble that updates smoothly as tokens stream
+ * from Google Gemini API via Server-Sent Events.
+ */
+function createStreamingBotBubble() {
+  showChatView();
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex w-full justify-start animate-fade-in';
+
+  const bubbleContainer = document.createElement('div');
+  bubbleContainer.className = 'flex gap-2 sm:gap-3 max-w-[95%] sm:max-w-[80%] items-start';
+
+  bubbleContainer.innerHTML = `
+    <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-gradient-to-tr from-sky-400 to-purple-500 flex items-center justify-center shrink-0 mt-0.5 shadow-[0_0_10px_rgba(56,189,248,0.3)]">
+      <span class="text-white font-bold text-[9px] sm:text-[10px]">A</span>
+    </div>
+    <div class="flex-1 space-y-1 sm:space-y-1.5 min-w-0">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Aura AI</span>
+        <!-- Speaker button for Text-to-Speech (appears when response completes) -->
+        <button
+          type="button"
+          class="speak-btn hidden text-slate-400 hover:text-sky-300 active:text-sky-200 p-2 sm:p-1.5 rounded-lg hover:bg-white/[0.08] active:bg-white/[0.15] transition-all cursor-pointer border border-transparent touch-press"
+          title="Read response aloud (Text-to-Speech)"
+        >
+          <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+        </button>
+      </div>
+      <div class="text-content text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-wrap break-words"></div>
+    </div>
+  `;
+
+  wrapper.appendChild(bubbleContainer);
+  chatMessages.appendChild(wrapper);
+  scrollToBottom();
+
+  const textEl = bubbleContainer.querySelector('.text-content');
+  const speakBtn = bubbleContainer.querySelector('.speak-btn');
+  let accumulatedText = '';
+  let isFinalized = false;
+
+  return {
+    appendChunk(chunk) {
+      accumulatedText += chunk;
+      textEl.textContent = accumulatedText;
+      scrollToBottom();
+    },
+    finalize() {
+      if (isFinalized) return;
+      isFinalized = true;
+      if (accumulatedText.trim() && speakBtn) {
+        speakBtn.classList.remove('hidden');
+        speakBtn.addEventListener('click', () => {
+          toggleSpeech(accumulatedText, speakBtn);
+        });
+      }
+    },
+    setError(errorMessage) {
+      accumulatedText = errorMessage;
+      textEl.innerHTML = `<span class="text-rose-400">${escapeHtml(errorMessage)}</span>`;
+      scrollToBottom();
+    },
+    getText() {
+      return accumulatedText;
+    }
+  };
+}
+
+/**
+ * ==============================================================================
+ * CORE FUNCTION: SEND MESSAGE TO BACKEND SERVER (REAL-TIME STREAMING)
+ * ==============================================================================
+ * Dispatches prompt to Express backend and streams incoming tokens via generateContentStream.
  */
 async function sendMessageToServer(userText) {
   // Stop any active speech recognition or speech output
@@ -387,34 +468,91 @@ async function sendMessageToServer(userText) {
   // Step 1: Render the user message immediately in the UI
   appendMessage('user', userText);
 
-  // Step 2: Show typing indicator & disable send button while waiting
+  // Step 2: Show typing indicator & disable send button while connecting
   typingIndicator.classList.remove('hidden');
   sendBtn.disabled = true;
   scrollToBottom();
+
+  let botStream = null;
 
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream'
       },
-      body: JSON.stringify({ message: userText })
+      body: JSON.stringify({ message: userText, stream: true })
     });
 
-    const data = await response.json();
-
     if (!response.ok) {
-      throw new Error(data.error || `Server responded with status ${response.status}`);
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Server responded with status ${response.status}`);
     }
 
-    // Step 3: Render the AI's conversational response
-    appendMessage('bot', data.reply);
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('text/event-stream') && response.body) {
+      // Create streaming response bubble and hide typing indicator immediately
+      botStream = createStreamingBotBubble();
+      typingIndicator.classList.add('hidden');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Preserve incomplete trailing chunk
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed.startsWith('data: ')) {
+            const dataPayload = trimmed.slice(6);
+            if (!dataPayload) continue;
+
+            try {
+              const parsed = JSON.parse(dataPayload);
+              if (parsed.text) {
+                botStream.appendChunk(parsed.text);
+              }
+              if (parsed.error) {
+                botStream.setError(`I encountered an issue: ${parsed.error}`);
+              }
+              if (parsed.done) {
+                botStream.finalize();
+              }
+            } catch (jsonErr) {
+              // Ignore partial JSON in stream buffer
+            }
+          }
+        }
+      }
+
+      // Ensure bubble is finalized once stream fully ends
+      botStream.finalize();
+
+    } else {
+      // Fallback for non-streaming responses
+      const data = await response.json();
+      typingIndicator.classList.add('hidden');
+      appendMessage('bot', data.reply);
+    }
 
   } catch (error) {
     console.error('Error contacting backend server:', error);
-    appendMessage('bot', `I encountered an issue connecting to the server: ${error.message}`);
+    typingIndicator.classList.add('hidden');
+    if (botStream && botStream.getText()) {
+      botStream.setError(`${botStream.getText()}\n\n[Connection Notice: ${error.message}]`);
+    } else {
+      appendMessage('bot', `I encountered an issue connecting to the server: ${error.message}`);
+    }
   } finally {
-    // Step 4: Hide typing indicator and re-enable send button
+    // Step 4: Clean up indicator and re-enable send button
     typingIndicator.classList.add('hidden');
     sendBtn.disabled = false;
     messageInput.focus();
