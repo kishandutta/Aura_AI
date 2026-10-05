@@ -37,8 +37,19 @@ const statusBadge = document.getElementById('statusBadge');
 const statusDot = document.getElementById('statusDot');
 const statusText = document.getElementById('statusText');
 
-// Tracks whether the user has sent at least one message in this session
+// Attachment controls & menus
+const attachmentBtn = document.getElementById('attachmentBtn');
+const attachmentPlusIcon = document.getElementById('attachmentPlusIcon');
+const attachmentMenu = document.getElementById('attachmentMenu');
+const menuUploadPhotosBtn = document.getElementById('menuUploadPhotosBtn');
+const menuUploadDocsBtn = document.getElementById('menuUploadDocsBtn');
+const photoFileInput = document.getElementById('photoFileInput');
+const docFileInput = document.getElementById('docFileInput');
+const attachmentPreviewContainer = document.getElementById('attachmentPreviewContainer');
+
+// State tracking
 let hasStartedChat = false;
+let pendingAttachments = [];
 
 // ==============================================================================
 // 🎨 ICONS: CLEAN SVG ICONS FOR TEXT-TO-SPEECH (SPEAKER & STOP STATES)
@@ -89,12 +100,209 @@ function scrollToBottom() {
 
 /**
  * ==============================================================================
+ * 📎 MULTIMODAL ATTACHMENTS SYSTEM: HELPERS & RENDERERS
+ * ==============================================================================
+ */
+function toggleAttachmentMenu(forceState) {
+  if (!attachmentMenu) return;
+  const isCurrentlyOpen = !attachmentMenu.classList.contains('hidden');
+  const shouldOpen = typeof forceState === 'boolean' ? forceState : !isCurrentlyOpen;
+
+  if (shouldOpen) {
+    attachmentMenu.classList.remove('hidden');
+    if (attachmentBtn) {
+      attachmentBtn.classList.add('menu-active');
+      attachmentBtn.setAttribute('aria-expanded', 'true');
+    }
+  } else {
+    attachmentMenu.classList.add('hidden');
+    if (attachmentBtn) {
+      attachmentBtn.classList.remove('menu-active');
+      attachmentBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+}
+
+function closeAttachmentMenu() {
+  toggleAttachmentMenu(false);
+}
+
+function formatFileSize(bytes) {
+  if (!bytes || bytes <= 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function getFileExtension(name) {
+  if (!name) return '';
+  const parts = name.split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+
+function handleIncomingFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB limit per file
+
+  Array.from(fileList).forEach(file => {
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`File "${file.name}" is too large. Maximum size is 25MB.`);
+      return;
+    }
+
+    const ext = getFileExtension(file.name);
+    const mime = (file.type || '').toLowerCase();
+    const isImage = mime.startsWith('image/') || ['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp'].includes(ext);
+    const isPdf = mime === 'application/pdf' || ext === 'pdf';
+    const isDoc = ['doc', 'docx'].includes(ext) || mime.includes('word') || mime.includes('officedocument');
+    const isTxt = mime.startsWith('text/') || ['txt', 'md', 'csv', 'json', 'js', 'py', 'ts'].includes(ext);
+
+    const attItem = {
+      id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      name: file.name,
+      size: file.size,
+      type: file.type || (isImage ? 'image/jpeg' : isPdf ? 'application/pdf' : 'text/plain'),
+      isImage,
+      isPdf,
+      isDoc,
+      isTxt,
+      previewUrl: isImage ? URL.createObjectURL(file) : null,
+      base64Data: '',
+      textContent: ''
+    };
+
+    pendingAttachments.push(attItem);
+    renderAttachmentPreviews();
+
+    // Read file as Base64 Data URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target.result;
+      if (typeof result === 'string') {
+        const commaIdx = result.indexOf(',');
+        attItem.base64Data = commaIdx !== -1 ? result.substring(commaIdx + 1) : result;
+      }
+    };
+    reader.readAsDataURL(file);
+
+    // If text file, also extract clean plain text
+    if (isTxt) {
+      const textReader = new FileReader();
+      textReader.onload = (e) => {
+        attItem.textContent = e.target.result || '';
+      };
+      textReader.readAsText(file);
+    }
+  });
+
+  closeAttachmentMenu();
+  renderAttachmentPreviews();
+}
+
+function removeAttachment(id) {
+  const index = pendingAttachments.findIndex(a => a.id === id);
+  if (index !== -1) {
+    const item = pendingAttachments[index];
+    if (item.previewUrl) {
+      try { URL.revokeObjectURL(item.previewUrl); } catch (e) {}
+    }
+    pendingAttachments.splice(index, 1);
+    renderAttachmentPreviews();
+  }
+}
+
+function renderAttachmentPreviews() {
+  if (!attachmentPreviewContainer) return;
+
+  if (pendingAttachments.length === 0) {
+    attachmentPreviewContainer.classList.add('hidden');
+    attachmentPreviewContainer.innerHTML = '';
+    return;
+  }
+
+  attachmentPreviewContainer.classList.remove('hidden');
+  attachmentPreviewContainer.innerHTML = '';
+
+  pendingAttachments.forEach(att => {
+    const chip = document.createElement('div');
+    chip.className = 'relative shrink-0 flex items-center animate-fade-in';
+
+    if (att.isImage) {
+      // Photo thumbnail chip
+      chip.innerHTML = `
+        <div class="relative group w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-white/20 bg-slate-900/90 shadow-md">
+          <img src="${att.previewUrl || ''}" alt="${escapeHtml(att.name)}" class="w-full h-full object-cover rounded-xl" />
+          <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-0.5 text-[8px] sm:text-[9px] text-slate-300 truncate text-center">
+            ${formatFileSize(att.size)}
+          </div>
+          <button
+            type="button"
+            class="attachment-remove-btn"
+            title="Remove photo"
+            aria-label="Remove photo"
+            data-id="${att.id}"
+          >
+            <svg class="w-2.5 h-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      `;
+    } else {
+      // Document pill chip
+      let badgeLabel = 'DOC';
+      let badgeBg = 'bg-indigo-500/20 text-indigo-300 border-indigo-400/30';
+      if (att.isPdf) {
+        badgeLabel = 'PDF';
+        badgeBg = 'bg-rose-500/20 text-rose-300 border-rose-400/30';
+      } else if (att.isTxt) {
+        badgeLabel = 'TXT';
+        badgeBg = 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30';
+      }
+
+      chip.innerHTML = `
+        <div class="relative flex items-center gap-2 pl-2.5 pr-6 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-white/15 shadow-md max-w-[200px]">
+          <div class="w-7 h-7 rounded-lg border ${badgeBg} flex items-center justify-center font-bold text-[9px] font-mono shrink-0">
+            ${badgeLabel}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-medium text-slate-200 truncate" title="${escapeHtml(att.name)}">${escapeHtml(att.name)}</p>
+            <p class="text-[9px] text-slate-400 font-mono">${formatFileSize(att.size)}</p>
+          </div>
+          <button
+            type="button"
+            class="attachment-remove-btn"
+            title="Remove document"
+            aria-label="Remove document"
+            data-id="${att.id}"
+          >
+            <svg class="w-2.5 h-2.5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      `;
+    }
+
+    const removeBtn = chip.querySelector('.attachment-remove-btn');
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeAttachment(att.id);
+      });
+    }
+
+    attachmentPreviewContainer.appendChild(chip);
+  });
+}
+
+/**
+ * ==============================================================================
  * UI FUNCTION: APPEND MESSAGE BUBBLE
  * ==============================================================================
  * Creates and renders a message bubble into the conversation stream.
+ * For user messages, gracefully displays photo thumbnails and document cards.
  * For AI responses, embeds a clickable Text-to-Speech speaker button.
  */
-function appendMessage(sender, text) {
+function appendMessage(sender, text, attachments = []) {
   showChatView();
 
   const isUser = sender === 'user';
@@ -102,10 +310,67 @@ function appendMessage(sender, text) {
   wrapper.className = `flex w-full ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`;
 
   if (isUser) {
-    // User Message Bubble (Mobile-optimized max-width & padding)
+    let attachmentsHtml = '';
+    if (Array.isArray(attachments) && attachments.length > 0) {
+      const images = attachments.filter(a => a.isImage || (a.type && a.type.startsWith('image/')));
+      const docs = attachments.filter(a => !images.includes(a));
+
+      let mediaHtml = '';
+      if (images.length > 0) {
+        mediaHtml += `<div class="user-attachment-grid">`;
+        images.forEach(img => {
+          const src = img.previewUrl || (img.base64Data ? `data:${img.type || 'image/jpeg'};base64,${img.base64Data}` : '');
+          if (src) {
+            mediaHtml += `
+              <img
+                src="${src}"
+                alt="${escapeHtml(img.name)}"
+                class="user-attachment-img shadow-md cursor-pointer"
+                title="Click to view full image: ${escapeHtml(img.name)}"
+                onclick="window.open(this.src, '_blank')"
+              />
+            `;
+          }
+        });
+        mediaHtml += `</div>`;
+      }
+
+      if (docs.length > 0) {
+        mediaHtml += `<div class="flex flex-col gap-1.5 mb-2">`;
+        docs.forEach(doc => {
+          const isPdf = doc.isPdf || (doc.name && doc.name.toLowerCase().endsWith('.pdf'));
+          const isTxt = doc.isTxt || (doc.name && doc.name.toLowerCase().endsWith('.txt'));
+          const badgeLabel = isPdf ? 'PDF' : isTxt ? 'TXT' : 'DOC';
+          const badgeBg = isPdf 
+            ? 'bg-rose-500/25 text-rose-300 border-rose-400/30' 
+            : isTxt 
+            ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/30' 
+            : 'bg-indigo-500/25 text-indigo-300 border-indigo-400/30';
+
+          mediaHtml += `
+            <div class="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-black/25 border border-white/10 text-xs">
+              <div class="w-7 h-7 rounded-lg border ${badgeBg} flex items-center justify-center font-bold text-[9px] font-mono shrink-0">
+                ${badgeLabel}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="font-medium text-slate-100 truncate">${escapeHtml(doc.name)}</div>
+                <div class="text-[10px] text-slate-400 font-mono">${formatFileSize(doc.size)}</div>
+              </div>
+            </div>
+          `;
+        });
+        mediaHtml += `</div>`;
+      }
+
+      attachmentsHtml = mediaHtml;
+    }
+
+    const textHtml = text ? `<p class="whitespace-pre-wrap ${attachmentsHtml ? 'mt-1' : ''}">${escapeHtml(text)}</p>` : '';
+
     wrapper.innerHTML = `
       <div class="max-w-[88%] sm:max-w-[75%] rounded-2xl rounded-tr-sm bg-gradient-to-r from-sky-500/20 to-indigo-500/20 border border-sky-400/20 px-3.5 sm:px-4 py-2.5 sm:py-3 text-slate-100 text-sm sm:text-base leading-relaxed shadow-sm">
-        <p class="whitespace-pre-wrap">${escapeHtml(text)}</p>
+        ${attachmentsHtml}
+        ${textHtml}
       </div>
     `;
   } else {
@@ -806,17 +1071,18 @@ function createStreamingBotBubble() {
  * ==============================================================================
  * CORE FUNCTION: SEND MESSAGE TO BACKEND SERVER (REAL-TIME STREAMING)
  * ==============================================================================
- * Dispatches prompt to Express backend and streams incoming tokens via generateContentStream.
+ * Dispatches prompt and multimodal attachments to Express backend and streams incoming
+ * tokens via generateContentStream.
  */
-async function sendMessageToServer(userText) {
+async function sendMessageToServer(userText, attachments = []) {
   // Stop any active speech recognition or speech output
   stopVoiceRecognition();
   stopSpeechSynthesis();
 
-  // Step 1: Render the user message immediately in the UI
-  appendMessage('user', userText);
+  // Step 1: Render the user message and attachment previews immediately in UI
+  appendMessage('user', userText, attachments);
 
-  // Step 2: Show typing indicator & disable send button while connecting
+  // Step 2: Show typing indicator & disable send button while waiting for first token
   typingIndicator.classList.remove('hidden');
   sendBtn.disabled = true;
   scrollToBottom();
@@ -824,13 +1090,25 @@ async function sendMessageToServer(userText) {
   let botStream = null;
 
   try {
+    const payload = {
+      message: userText,
+      attachments: (attachments || []).map(a => ({
+        name: a.name,
+        type: a.type,
+        size: a.size,
+        data: a.base64Data,
+        textContent: a.textContent
+      })),
+      stream: true
+    };
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'text/event-stream'
       },
-      body: JSON.stringify({ message: userText, stream: true })
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
@@ -921,7 +1199,7 @@ async function loadChatHistory() {
     if (data.success && Array.isArray(data.history) && data.history.length > 0) {
       console.log(`Loaded ${data.history.length} past messages from MongoDB.`);
       data.history.forEach(item => {
-        appendMessage('user', item.userPrompt);
+        appendMessage('user', item.userPrompt, item.attachments || []);
         appendMessage('bot', item.botResponse);
       });
     }
@@ -972,6 +1250,72 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // 1. Plus Button: Toggle floating attachment popup menu
+  if (attachmentBtn) {
+    attachmentBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleAttachmentMenu();
+    });
+  }
+
+  // 2. Dropdown Option: Upload Photos
+  if (menuUploadPhotosBtn && photoFileInput) {
+    menuUploadPhotosBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAttachmentMenu();
+      photoFileInput.click();
+    });
+  }
+
+  // 3. Dropdown Option: Documents
+  if (menuUploadDocsBtn && docFileInput) {
+    menuUploadDocsBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      closeAttachmentMenu();
+      docFileInput.click();
+    });
+  }
+
+  // 4. File input change handlers (Photos & Documents)
+  if (photoFileInput) {
+    photoFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleIncomingFiles(e.target.files);
+        photoFileInput.value = '';
+      }
+    });
+  }
+
+  if (docFileInput) {
+    docFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleIncomingFiles(e.target.files);
+        docFileInput.value = '';
+      }
+    });
+  }
+
+  // 5. Smoothly close popup when clicking outside
+  document.addEventListener('click', (e) => {
+    if (attachmentMenu && !attachmentMenu.classList.contains('hidden')) {
+      const isInsideMenu = attachmentMenu.contains(e.target);
+      const isInsideBtn = attachmentBtn && attachmentBtn.contains(e.target);
+      if (!isInsideMenu && !isInsideBtn) {
+        closeAttachmentMenu();
+      }
+    }
+  });
+
+  // 6. Smoothly close popup when pressing Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeAttachmentMenu();
+    }
+  });
+
   // Auto-resize textarea as user types
   messageInput.addEventListener('input', () => {
     messageInput.style.height = 'auto';
@@ -986,17 +1330,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Handle form submission
+  // Handle form submission (with message and/or attachments)
   chatForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const prompt = messageInput.value.trim();
-    if (!prompt) return;
+    const attachmentsToSend = [...pendingAttachments];
+
+    // Must have either a prompt or at least one attached file
+    if (!prompt && attachmentsToSend.length === 0) return;
+
+    // Close attachment menu if still open
+    closeAttachmentMenu();
 
     // Clear input field and reset height
     messageInput.value = '';
     messageInput.style.height = '44px';
 
-    // Dispatch message to backend
-    sendMessageToServer(prompt);
+    // Clear pending attachments state and previews
+    pendingAttachments = [];
+    renderAttachmentPreviews();
+
+    // Dispatch message & multimodal attachments to backend
+    sendMessageToServer(prompt, attachmentsToSend);
   });
 });

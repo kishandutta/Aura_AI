@@ -207,12 +207,129 @@ button, input, textarea {
   user-select: none;
 }
 
+/* ==============================================================================
+   MULTIMODAL ATTACHMENT SYSTEM & FLOATING POPUP MENU
+   ============================================================================== */
+#attachmentDropdownWrapper {
+  position: relative;
+  z-index: 30;
+}
+
+#attachmentBtn {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#attachmentBtn.menu-active {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+}
+
+#attachmentBtn.menu-active #attachmentPlusIcon {
+  transform: rotate(45deg);
+  color: #38bdf8;
+}
+
+/* Floating Menu Entrance Animation */
+@keyframes menuPopupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+#attachmentMenu:not(.hidden) {
+  display: block;
+  animation: menuPopupFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Attachment Previews Horizontal Scroller */
+#attachmentPreviewContainer {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+#attachmentPreviewContainer::-webkit-scrollbar {
+  height: 4px;
+}
+
+#attachmentPreviewContainer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#attachmentPreviewContainer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+/* Removal 'X' Button on File Chips & Photos */
+.attachment-remove-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: #090d16;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
+  outline: none;
+}
+
+.attachment-remove-btn:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
+.attachment-remove-btn:active {
+  transform: scale(0.92);
+}
+
+/* User Bubble Attachment Media Grid */
+.user-attachment-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.user-attachment-img {
+  max-height: 180px;
+  max-width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.user-attachment-img:hover {
+  opacity: 0.95;
+  transform: scale(1.01);
+}
+
 /* Mobile Adjustments (Screen width <= 640px) */
 @media (max-width: 640px) {
   /* 1. Lift bottom container cleanly up from screen edge with safe-area clearance */
   .input-container-bar {
     width: 100%;
-    max-width: 90%;
+    max-width: calc(100% - 16px);
     margin-left: auto;
     margin-right: auto;
     margin-bottom: max(16px, calc(16px + env(safe-area-inset-bottom, 0px)));
@@ -221,22 +338,37 @@ button, input, textarea {
 
   /* 2. Messages scroll container clean bottom breathing room on mobile */
   #chatMessages {
-    padding-bottom: 24px !important;
+    padding-bottom: 30px !important;
   }
 
-  /* 3. Input text sizing & padding so placeholder is completely visible and never touching screen edge */
+  /* 3. Touch button ergonomics for 3-button row */
+  #attachmentBtn, #micBtn, #sendBtn {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+  }
+
+  /* 4. Input text sizing & padding so placeholder is completely visible */
   #messageInput {
     font-size: 16px !important; /* Prevents iOS Safari input focus auto-zoom */
-    padding-left: 12px !important;
+    padding-left: 8px !important;
     padding-right: 8px !important;
   }
 
   #messageInput::placeholder {
-    font-size: 13px !important; /* Ensures the full placeholder text is completely visible on mobile */
+    font-size: 12.5px !important;
     letter-spacing: -0.015em;
   }
 
-  /* 4. Footer helper text subtitle neatly placed right below input box without boundary overflow */
+  /* 5. Floating menu positioning on mobile */
+  #attachmentMenu {
+    width: 220px;
+    bottom: calc(100% + 8px);
+    left: 0;
+  }
+
+  /* 6. Footer helper text subtitle */
   .footer-helper-text {
     margin-top: 6px;
     padding: 0 4px;
@@ -247,16 +379,27 @@ button, input, textarea {
 /* Ultra-narrow mobile screens (e.g. <= 360px) */
 @media (max-width: 360px) {
   .input-container-bar {
-    max-width: 94%;
+    max-width: calc(100% - 8px);
   }
 
-  #micBtn, #sendBtn {
-    width: 36px !important;
-    height: 36px !important;
+  #attachmentBtn, #micBtn, #sendBtn {
+    width: 35px !important;
+    height: 35px !important;
+    min-width: 35px !important;
+    min-height: 35px !important;
+  }
+
+  #messageInput {
+    padding-left: 6px !important;
+    padding-right: 6px !important;
   }
 
   #messageInput::placeholder {
-    font-size: 12px !important;
+    font-size: 11px !important;
+  }
+
+  #attachmentMenu {
+    width: 200px;
   }
 }
 

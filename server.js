@@ -50,6 +50,9 @@ try {
 // Import the Mongoose Chat Model to store conversations in MongoDB
 const Chat = require('./models/Chat');
 
+// Import Mammoth to extract readable text from DOCX documents
+const mammoth = require('mammoth');
+
 // Initialize the Express application
 const app = express();
 
@@ -59,8 +62,9 @@ const app = express();
 // Enable CORS so the browser can freely communicate with this backend
 app.use(cors());
 
-// Automatically parse JSON bodies in incoming requests (e.g. { message: "Hello" })
-app.use(express.json());
+// Automatically parse JSON bodies with 50mb limit to support high-res images and documents
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve all frontend files (HTML, CSS, JavaScript) from the 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
@@ -175,12 +179,15 @@ async function generateGeminiStream(contents) {
     'gemini-1.5-flash',
     'gemini-flash-lite-latest',
     'gemini-flash-latest',
+    'gemini-2.5-flash',
+    'gemini-3.8-flash',
     'gemini-3.5-flash-lite'
   ];
 
   const systemInstruction = 
     "You are Aura AI, an exceptionally smart, warm, and articulate conversational companion. " +
     "STRICT RULE: Always respond in natural, elegant, human-friendly conversational language. " +
+    "When images or documents are provided, analyze them thoroughly, describe key elements, and answer questions accurately. " +
     "Do NOT output random code blocks, backticks, or programming scripts unless the user explicitly requests code.";
 
   let lastError = null;
@@ -205,6 +212,96 @@ async function generateGeminiStream(contents) {
   }
 
   throw new Error(`Google Gemini Error: ${lastError || 'Unable to generate response stream.'}`);
+}
+
+/**
+ * ==============================================================================
+ * 📦 5. MULTIMODAL ATTACHMENT PROCESSOR
+ * ==============================================================================
+ * Converts attached photos (base64 inlineData) and documents (PDF, TXT, DOC, DOCX)
+ * into Google Gemini API compatible content parts.
+ * 
+ * @param {Array<Object>} attachments
+ * @returns {Promise<Array<Object>>}
+ */
+async function processAttachmentsToParts(attachments) {
+  const parts = [];
+  if (!Array.isArray(attachments) || attachments.length === 0) {
+    return parts;
+  }
+
+  for (const att of attachments) {
+    if (!att) continue;
+    const name = (att.name || 'attachment').trim();
+    const rawMime = (att.type || '').toLowerCase();
+    const rawData = att.data ? String(att.data).replace(/^data:[^;]+;base64,/, '').trim() : '';
+
+    const isImage = rawMime.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp|heic|heif)$/i.test(name);
+    const isPdf = rawMime === 'application/pdf' || /\.pdf$/i.test(name);
+    const isWordDoc = rawMime.includes('word') || rawMime.includes('officedocument') || /\.(docx|doc)$/i.test(name);
+    const isText = rawMime.startsWith('text/') || /\.(txt|md|csv|json|js|ts|py|html|css|xml|log)$/i.test(name);
+
+    if (isImage && rawData) {
+      const mimeType = rawMime.startsWith('image/') ? rawMime : 'image/jpeg';
+      parts.push({
+        inlineData: {
+          mimeType,
+          data: rawData
+        }
+      });
+    } else if (isPdf && rawData) {
+      parts.push({
+        inlineData: {
+          mimeType: 'application/pdf',
+          data: rawData
+        }
+      });
+    } else if (isWordDoc) {
+      let docText = (att.textContent || '').trim();
+      if (!docText && rawData) {
+        try {
+          const docBuffer = Buffer.from(rawData, 'base64');
+          const mammothResult = await mammoth.extractRawText({ buffer: docBuffer });
+          docText = (mammothResult.value || '').trim();
+        } catch (docxErr) {
+          console.warn(`⚠️ [Mammoth docx parse notice for ${name}]:`, docxErr.message);
+          // Fallback: extract printable strings from buffer
+          const bufferStr = Buffer.from(rawData, 'base64').toString('binary');
+          const printable = bufferStr.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+          docText = printable.replace(/\s+/g, ' ').substring(0, 15000).trim();
+        }
+      }
+      if (docText) {
+        parts.push({
+          text: `[Attached Document: "${name}"]\n${docText}\n[End of "${name}"]`
+        });
+      }
+    } else if (isText) {
+      let text = (att.textContent || '').trim();
+      if (!text && rawData) {
+        try {
+          text = Buffer.from(rawData, 'base64').toString('utf-8').trim();
+        } catch (e) {
+          text = '';
+        }
+      }
+      if (text) {
+        parts.push({
+          text: `[Attached Document: "${name}"]\n${text}\n[End of "${name}"]`
+        });
+      }
+    } else if (rawData) {
+      // General fallback
+      parts.push({
+        inlineData: {
+          mimeType: rawMime || 'application/octet-stream',
+          data: rawData
+        }
+      });
+    }
+  }
+
+  return parts;
 }
 
 // ==============================================================================
@@ -232,36 +329,63 @@ app.get('/api/health', (req, res) => {
 
 /**
  * PRIMARY CHAT ROUTE: POST /api/chat
- * Receives: { "message": "user question", "stream": true }
+ * Receives: { "message": "user question", "attachments": [...], "stream": true }
  * Supports real-time Server-Sent Events (SSE) streaming via generateContentStream,
- * and falls back to standard JSON when requested.
+ * multimodal inlineData image and document processing, and falls back to standard JSON.
  */
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, stream = true } = req.body;
+    const { message, attachments = [], stream = true } = req.body;
+
+    const hasMessage = message && typeof message === 'string' && message.trim().length > 0;
+    const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
 
     // 1. Input Validation
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    if (!hasMessage && !hasAttachments) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide a non-empty message in your request.'
+        error: 'Please provide a message or attach a file or photo to analyze.'
       });
     }
 
-    const cleanUserPrompt = message.trim();
-    console.log(`\n💬 [Incoming User Prompt]: "${cleanUserPrompt.substring(0, 80)}..."`);
+    const cleanUserPrompt = hasMessage ? message.trim() : '';
+    console.log(`\n💬 [Incoming User Request]: "${cleanUserPrompt.substring(0, 80)}..." (${attachments.length} attachment(s))`);
 
-    // 2. Fetch trimmed conversation history from MongoDB (last 4 to 6 turns)
+    // 2. Process multimodal attachments into Gemini parts (images, PDF, DOCX/DOC, TXT)
+    const attachmentParts = await processAttachmentsToParts(attachments);
+
+    // 3. Assemble the user's turn parts
+    const userParts = [...attachmentParts];
+    if (cleanUserPrompt) {
+      userParts.push({ text: cleanUserPrompt });
+    } else {
+      userParts.push({
+        text: 'Please carefully analyze the attached file(s) and provide a comprehensive overview, key insights, and answer any questions.'
+      });
+    }
+
+    // 4. Fetch trimmed conversation history from MongoDB (last 4 to 6 turns)
     const historyContents = await getTrimmedChatHistory(5);
     const fullContents = [
       ...historyContents,
-      { role: 'user', parts: [{ text: cleanUserPrompt }] }
+      { role: 'user', parts: userParts }
     ];
 
     const isStream = stream !== false && req.headers.accept !== 'application/json';
 
+    // Summary representation of prompt for storage
+    const promptSummary = cleanUserPrompt || (hasAttachments 
+      ? `[Analyzed ${attachments.length} file(s): ${attachments.map(a => a.name).join(', ')}]`
+      : 'Multimodal Attachment Analysis');
+
+    const sanitizedAttachments = (attachments || []).map(a => ({
+      name: a.name || 'unnamed',
+      type: a.type || 'unknown',
+      size: a.size || 0
+    }));
+
     if (isStream) {
-      // 3. Setup Server-Sent Events (SSE) headers for real-time token streaming
+      // 5. Setup Server-Sent Events (SSE) headers for real-time token streaming
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
@@ -291,8 +415,9 @@ app.post('/api/chat', async (req, res) => {
         if (isMongoConnected && fullAiReply.trim()) {
           try {
             const savedRecord = await Chat.create({
-              userPrompt: cleanUserPrompt,
+              userPrompt: promptSummary,
               botResponse: fullAiReply.trim(),
+              attachments: sanitizedAttachments,
               metadata: {
                 model: activeModel,
                 clientIp: req.ip || '127.0.0.1'
@@ -328,8 +453,9 @@ app.post('/api/chat', async (req, res) => {
       if (isMongoConnected && fullAiReply.trim()) {
         try {
           const savedRecord = await Chat.create({
-            userPrompt: cleanUserPrompt,
+            userPrompt: promptSummary,
             botResponse: fullAiReply.trim(),
+            attachments: sanitizedAttachments,
             metadata: {
               model: streamResult.modelUsed,
               clientIp: req.ip || '127.0.0.1'

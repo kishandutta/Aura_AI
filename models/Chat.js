@@ -59,7 +59,16 @@ const ChatSchema = new mongoose.Schema(
         type: String,
         default: 'unknown'
       }
-    }
+    },
+
+    // Optional attachments metadata (file names, types, sizes)
+    attachments: [
+      {
+        name: { type: String, trim: true },
+        type: { type: String, trim: true },
+        size: { type: Number }
+      }
+    ]
   },
   {
     // Optional schema options: timestamps: true automatically adds createdAt & updatedAt
